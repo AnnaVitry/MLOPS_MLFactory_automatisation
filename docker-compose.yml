@@ -90,9 +90,7 @@ services:
     entrypoint: ["prefect", "server", "start"]
 
   api:
-    build:
-      context: .
-      dockerfile: src/api/Dockerfile
+    image: ghcr.io/annavitry/mlops_mlfactory-api:latest  # Remplace le build: par image:
     container_name: ml_api
     depends_on:
       - mlflow
@@ -107,9 +105,7 @@ services:
       - MODEL_ALIAS=${MODEL_ALIAS}
 
   front:
-    build:
-      context: .
-      dockerfile: src/front/Dockerfile
+    image: ghcr.io/annavitry/mlops_mlfactory-front:latest # Remplace le build: par image:
     container_name: ml_front
     depends_on:
       - api
@@ -125,5 +121,3 @@ volumes:
   minio_data: 
   db_data:          # Ajout des volumes persistants pour Prefect sans toucher à l'existant
   prefect_data:
-# image: ghcr.io/annavitry/mlops_mlfactory-api:latest  # Remplace le build: par image:
-# image: ghcr.io/annavitry/mlops_mlfactory-front:latest # Remplace le build: par image:
