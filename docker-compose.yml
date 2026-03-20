@@ -90,10 +90,10 @@ services:
     entrypoint: ["prefect", "server", "start"]
 
   api:
-    # build: .                            # Commenté pour forcer Docker à télécharger tes
-    #   context: .                        # images en ligne en remplacent les 
-    #   dockerfile: src/api/Dockerfile    # instructions build: par image:
-    image: ghcr.io/annavitry/mlops_mlfactory-api:latest  # Remplace le build: par image:
+    build: .                            # Commenté pour forcer Docker à télécharger tes
+      context: .                        # images en ligne en remplacent les 
+      dockerfile: src/api/Dockerfile    # instructions build: par image:
+    # image: ghcr.io/annavitry/mlops_mlfactory-api:latest  # Remplace le build: par image:
     container_name: ml_api
     depends_on:
       - mlflow
@@ -108,10 +108,10 @@ services:
       - MODEL_ALIAS=${MODEL_ALIAS}
 
   front:
-    # build: .                            # Commenté pour forcer Docker à télécharger tes
-    #   context: .                        # images en ligne en remplacent les 
-    #   dockerfile: src/front/Dockerfile  # instructions build: par image:
-    image: ghcr.io/annavitry/mlops_mlfactory-front:latest # Remplace le build: par image:
+    build: .                            # Commenté pour forcer Docker à télécharger tes
+      context: .                        # images en ligne en remplacent les 
+      dockerfile: src/front/Dockerfile  # instructions build: par image:
+    # image: ghcr.io/annavitry/mlops_mlfactory-front:latest # Remplace le build: par image:
     container_name: ml_front
     depends_on:
       - api
