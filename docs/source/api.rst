@@ -1,0 +1,7 @@
+Module API (Inférence)
+======================
+
+.. automodule:: src.api.main
+   :members:
+   :undoc-members:
+   :show-inheritance:

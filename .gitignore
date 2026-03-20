@@ -1,0 +1,24 @@
+# === Environnement & Secrets ===
+.env
+.env.*
+!.env.example
+
+# === Python & Outils ===
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+.coverage
+
+# === ML & Données ===
+data/
+*.csv
+*.pkl
+mlruns/
+mlflow.db
+
+# === IDE & OS ===
+.vscode/
+.idea/
+.DS_Storedocs/build/

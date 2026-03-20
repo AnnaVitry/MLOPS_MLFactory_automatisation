@@ -1,0 +1,124 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# Définition des permissions globales nécessaires
+permissions:
+  contents: write    # Pour pousser la doc sur gh-pages
+  packages: write   # Pour pousser les images Docker sur GHCR
+  pages: write      # Autorise l'écriture sur GitHub Pages
+  id-token: write   # Autorise l'authentification sécurisée
+
+jobs:
+  # ==========================================
+  # DÉPLOIEMENT NATIF DE LA DOCUMENTATION
+  # ==========================================
+  deploy-docs:
+    name: 📚 Deploy Sphinx to GH Pages
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    # Définit l'environnement cible pour récupérer l'URL à la fin
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+        
+      - name: Configuration Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          
+      - name: Build de la version finale
+        run: |
+          pip install uv
+          uv venv
+          source .venv/bin/activate
+          uv pip install sphinx sphinx-rtd-theme myst-parser
+          cd docs
+          make html
+          
+      - name: Configuration native GitHub Pages
+        uses: actions/configure-pages@v5
+        
+      - name: Upload de l'artefact (Le site web)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs/build/html'
+          
+      - name: Déploiement en ligne
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ==========================================
+  # BUILD & PUSH DES IMAGES DOCKER
+  # ==========================================
+  build-and-push-images:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    # On s'assure que la CI est au vert avant de construire
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Connexion au GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          # Le token est fourni automatiquement par GitHub
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- CONQUÊTE DE L'API ---
+      - name: Extraction des métadonnées (API)
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+
+      - name: Build et Push (API)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./src/api/Dockerfile 
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+
+      # --- CONQUÊTE DU FRONT ---
+      - name: Extraction des métadonnées (Front)
+        id: meta-front
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-front
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+
+      - name: Build et Push (Front)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./src/front/Dockerfile
+          push: true
+          tags: ${{ steps.meta-front.outputs.tags }}
+          labels: ${{ steps.meta-front.outputs.labels }}

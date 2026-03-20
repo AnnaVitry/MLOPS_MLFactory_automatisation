@@ -1,0 +1,99 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ==========================================
+  # 1. Vérification des secrets
+  # ==========================================
+  security:
+    name: Audit Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Scan Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ==========================================
+  # 2. Qualité du code (Le juge de paix)
+  # ==========================================
+  lint:
+    name: Code Quality (Ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+        
+      - name: Configuration de Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installation et Linting
+        # Création d'un venv, activation, installation et exécution
+        run: |
+          pip install uv
+          uv venv
+          source .venv/bin/activate
+          uv pip install ruff
+          ruff format --check .
+          ruff check .
+
+  # ==========================================
+  # 3. Crash-test de la documentation
+  # ==========================================
+  test-docs:
+    name: Test Build Sphinx
+    runs-on: ubuntu-latest
+    needs: [security, lint] 
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          
+      - name: Installation et Compilation
+        # Même logique : environnement virtuel isolé pour Sphinx
+        run: |
+          pip install uv
+          uv venv
+          source .venv/bin/activate
+          uv pip install sphinx sphinx-rtd-theme myst-parser
+          cd docs
+          make html
+
+  # ==========================================================================
+  # 4. Pytests (sans coverage parce que c'est pas pour le badge qu'on le fait)
+  # ==========================================================================
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+      
+      - name: Installation de uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          
+      - name: Configuration de Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          
+      - name: Synchronisation de l'environnement (avec dépendances dev)
+        run: uv sync --dev
+        
+      - name: Exécution des tests (Tolérance Zéro)
+        run: uv run pytest tests/
