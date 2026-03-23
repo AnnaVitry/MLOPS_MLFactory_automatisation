@@ -32,8 +32,9 @@ deployments:
       image: "{{ build-image.image }}"
       image_pull_policy: "Never" # La protection contre le téléchargement externe
       env:
-        MLFLOW_S3_ENDPOINT_URL: "{{ $MLFLOW_S3_ENDPOINT_URL }}"
-        MLFLOW_TRACKING_URI: "{{ $MLFLOW_TRACKING_URI }}"
+        # On force le pont réseau (bridge) pour que le conteneur trouve l'usine
+        MLFLOW_S3_ENDPOINT_URL: "http://host.docker.internal:9000"
+        MLFLOW_TRACKING_URI: "http://host.docker.internal:5000"
         AWS_ACCESS_KEY_ID: "{{ $AWS_ACCESS_KEY_ID }}"
         AWS_SECRET_ACCESS_KEY: "{{ $AWS_SECRET_ACCESS_KEY }}"
         PREFECT_API_URL: "http://host.docker.internal:4200/api"
