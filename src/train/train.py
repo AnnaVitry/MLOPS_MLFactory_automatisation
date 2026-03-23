@@ -269,4 +269,5 @@ def pipeline_mlops():
 
 
 if __name__ == "__main__":
-    pipeline_mlops()  # Au lieu d'appeler les fonctions séparément, on appelle le Flow
+    print("🚀 Exécution manuelle du pipeline (Mode Test)...")
+    pipeline_mlops()

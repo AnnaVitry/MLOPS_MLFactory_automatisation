@@ -1,0 +1,39 @@
+# prefect.yaml
+name: ml-factory-deployment
+prefect-version: 3.0.0
+
+# 1. Construire l'image Docker du Worker
+build:
+  - prefect_docker.deployments.steps.build_docker_image:
+      id: build-image
+      requires: prefect-docker
+      image_name: mlfactory-worker
+      tag: latest
+      dockerfile: Dockerfile
+
+# 2. Récupérer le code (ici, il est déjà dans l'image Docker)
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /app
+
+# 3. La définition de ton déploiement
+deployments:
+  - name: production-training-job
+    tags: ["production", "mlops"]
+    description: "Entraînement automatisé via un Worker Docker"
+    entrypoint: src/train/train.py:pipeline_mlops
+    schedule:
+      cron: "*/5 * * * *"
+    work_pool:
+      name: docker-pool
+      
+    # BLOC UNIQUE ET CENTRALISÉ POUR LE WORKER
+    job_variables:
+      image: "{{ build-image.image }}"
+      image_pull_policy: "Never" # La protection contre le téléchargement externe
+      env:
+        MLFLOW_S3_ENDPOINT_URL: "{{ $MLFLOW_S3_ENDPOINT_URL }}"
+        MLFLOW_TRACKING_URI: "{{ $MLFLOW_TRACKING_URI }}"
+        AWS_ACCESS_KEY_ID: "{{ $AWS_ACCESS_KEY_ID }}"
+        AWS_SECRET_ACCESS_KEY: "{{ $AWS_SECRET_ACCESS_KEY }}"
+        PREFECT_API_URL: "http://host.docker.internal:4200/api"

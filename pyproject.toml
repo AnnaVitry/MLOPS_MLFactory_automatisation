@@ -10,6 +10,7 @@ dependencies = [
     "mlflow>=3.10.1",
     "pandas>=2.3.3",
     "prefect>=3.6.22",
+    "prefect-docker>=0.7.1",
     "python-dotenv>=1.2.2",
     "scikit-learn>=1.8.0",
     "streamlit>=1.55.0",
