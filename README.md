@@ -1,7 +1,7 @@
-# 🌸 MLOps Factory - Iris Dataset
+# 🌸 MLOps Factory_automatisation - Iris Dataset
 
-[![CI Pipeline](https://github.com/AnnaVitry/MLOPS_MLFactory/actions/workflows/ci.yml/badge.svg)](https://github.com/AnnaVitry/MLOPS_MLFactory/actions/workflows/ci.yml)
-[![CD Pipeline](https://github.com/AnnaVitry/MLOPS_MLFactory/actions/workflows/cd.yml/badge.svg)](https://github.com/AnnaVitry/MLOPS_MLFactory/actions/workflows/cd.yml)
+[![CI Pipeline](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/ci.yml/badge.svg)](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/ci.yml)
+[![CD Pipeline](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/cd.yml/badge.svg)](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/cd.yml)
 ![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -17,10 +17,10 @@
 
 ##  ʕ•ᴥ•ʔっ · · · ✴ Vision et Architecture
 
-L'**Iris ML Factory** n'est pas un simple script d'apprentissage automatique. C'est une usine logicielle complète conçue pour démontrer les standards du **MLOps**. Le projet sépare strictement l'entraînement, le stockage et l'inférence via une architecture de microservices conteneurisés.
+L'**Iris ML Factory_automatisation** n'est pas un simple script d'apprentissage automatique. C'est une usine logicielle complète conçue pour démontrer les standards du **MLOps**. Le projet sépare strictement l'entraînement, le stockage et l'inférence via une architecture de microservices conteneurisés.
 
 ```bash
-MLOPS_MLFACTORY/
+MLOPS_MLFACTORY_automatisation/
 ├── data/                   # Données générées pour les tests (partagé via volume Docker)
 │   └── iris_test.csv       # Fichier CSV utilisé par le Front-end
 ├── src/
@@ -52,8 +52,8 @@ L'intégralité de l'infrastructure est orchestrée par Docker Compose pour gara
 
 ### 1. Cloner le dépôt
 ```bash
-git clone [https://github.com/AnnaVitry/MLOPS_MLFactory.git](https://github.com/AnnaVitry/MLOPS_MLFactory.git)
-cd MLOPS_MLFactory
+git clone [https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation.git](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation.git)
+cd MLOPS_MLFactory_automatisation
 ```
 ### 2. Démarrage de l'infrastructure
 Pour lancer tous les services (MinIO, MLflow, API, Front) :
@@ -114,7 +114,7 @@ Le projet applique une discipline logicielle stricte via **GitHub Actions** :
   1. Les **Images Docker** (API & Front) qui sont poussées sur le *GitHub Container Registry* (GHCR).
   2. La **Documentation Technique** (Sphinx/Diátaxis) qui est déployée dynamiquement sur GitHub Pages.
 
-**[Consulter la Documentation Officielle Complète](https://annavitry.github.io/MLOPS_MLFactory/)**
+**[Consulter la Documentation Officielle Complète](https://annavitry.github.io/MLOPS_MLFactory_automatisation/)**
 
 ---
 
