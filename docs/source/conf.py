@@ -12,11 +12,9 @@ release = "1.0"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
-    "furo",
     "sphinx.ext.autodoc",  # Génère la doc à partir du code (lit les docstrings)
     "sphinx.ext.napoleon",  # Supporte les docstrings style Google/NumPy (plus lisibles)
     "sphinx.ext.viewcode",  # Ajoute un bouton "[source]" pour voir le code Python depuis la doc web
-    # --- NOUVELLES EXTENSIONS AJOUTÉES ---
     "sphinx.ext.duration",  # Mesure et affiche le temps de compilation (utile pour optimiser la CI/CD)
     "sphinx.ext.doctest",  # Exécute les exemples de code dans la doc pour vérifier qu'ils ne sont pas obsolètes
     "sphinx.ext.mathjax",  # Rend les formules mathématiques (LaTeX) lisibles (très utile en Machine Learning)
@@ -24,7 +22,6 @@ extensions = [
     # "sphinxcontrib.bibtex", # (Désactivé) Servirait à gérer une bibliographie pour citer des papiers de recherche
 ]
 
-# --- Astuce MLOps : Simuler les librairies lourdes ---
 autodoc_mock_imports = [
     "fastapi",
     "pydantic",
