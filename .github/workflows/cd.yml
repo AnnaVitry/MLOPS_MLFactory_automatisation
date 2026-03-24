@@ -48,7 +48,7 @@ jobs:
           pip install uv
           uv venv
           source .venv/bin/activate
-          uv pip install sphinx sphinx-rtd-theme myst-parser
+          uv pip install sphinx furo myst-parser
           cd docs
           make html
           
