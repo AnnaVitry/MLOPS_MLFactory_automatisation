@@ -48,3 +48,9 @@ html_favicon = (
     "_static/img/favicon.svg"  # Affiche l'icône dans l'onglet du navigateur web
 )
 html_title = "ML Factory"  # Personnalise le titre de la page web (balise <title>)
+html_theme_options = {
+    "light_css_variables": {
+        "color-brand-primary": "#0094E2",  # Bleu MLflow
+        "color-brand-content": "#005571",  # Bleu FastAPI
+    },
+}
