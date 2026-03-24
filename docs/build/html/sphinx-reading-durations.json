@@ -1,9 +1,9 @@
 {
-    "api": 0.871,
-    "architecture": 0.017,
-    "front": 0.059,
-    "guide": 0.009,
-    "index": 0.068,
+    "api": 0.779,
+    "architecture": 0.016,
+    "front": 0.058,
+    "guide": 0.01,
+    "index": 0.07,
     "modules": 0.003,
-    "train": 1.619
+    "train": 1.969
 }

@@ -3,21 +3,16 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Bienvenue dans la documentation de ML Factory_automatisation !
-===============================================================
+Bienvenue dans la documentation !
+=================================
 
 .. include:: ../../README.md
    :parser: myst_parser.sphinx_
 
 .. toctree::
    :maxdepth: 2
-   :caption: Documentation Générale:
-
-   architecture
-   guide
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Référence du Code (API):
+   :caption: COMPOSANTS DU PROJET :
 
    modules
+   guide
+   architecture
