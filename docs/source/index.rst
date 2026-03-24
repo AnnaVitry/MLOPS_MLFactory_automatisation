@@ -3,10 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Bienvenue dans la documentation de ML Factory !
+Bienvenue dans la documentation de ML Factory_automatisation !
 ===============================================
-
-L'usine MLOps Iris est un projet complet de bout en bout, démontrant les meilleures pratiques de conteneurisation, de suivi d'expériences et de déploiement continu.
 
 .. include:: ../../README.md
    :parser: myst_parser.sphinx_
