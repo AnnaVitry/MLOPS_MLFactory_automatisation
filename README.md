@@ -1,4 +1,4 @@
-# 🌸 MLOps Factory_automatisation du Iris Dataset
+# 🌸 MLOps Factory_automatisation - Iris Dataset
 
 [![CI Pipeline](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/ci.yml/badge.svg)](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/ci.yml)
 [![CD Pipeline](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/cd.yml/badge.svg)](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/cd.yml)
