@@ -26,7 +26,7 @@ L'infrastructure de la ML Factory repose sur une architecture **MLOps Cloud-Nati
 
 ## Arborescence du Projet
 
-```bash
+```text
 MLOPS_MLFACTORY/
 ├── data/                   # Fichiers CSV générés pour les tests
 ├── docs/                   # Documentation technique Sphinx/ReadTheDocs
