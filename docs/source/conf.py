@@ -12,6 +12,7 @@ release = "1.0"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
+    "furo",
     "sphinx.ext.autodoc",  # Génère la doc à partir du code (lit les docstrings)
     "sphinx.ext.napoleon",  # Supporte les docstrings style Google/NumPy (plus lisibles)
     "sphinx.ext.viewcode",  # Ajoute un bouton "[source]" pour voir le code Python depuis la doc web

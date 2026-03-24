@@ -46,11 +46,8 @@ jobs:
       - name: Build de la version finale
         run: |
           pip install uv
-          uv venv
-          source .venv/bin/activate
-          uv pip install sphinx furo myst-parser
-          cd docs
-          make html
+          uv sync
+          uv run make -C docs html
           
       - name: Configuration native GitHub Pages
         uses: actions/configure-pages@v5
