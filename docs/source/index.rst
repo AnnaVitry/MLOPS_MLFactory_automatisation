@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Bienvenue dans la documentation de ML Factory_automatisation !
-===============================================
+===============================================================
 
 .. include:: ../../README.md
    :parser: myst_parser.sphinx_

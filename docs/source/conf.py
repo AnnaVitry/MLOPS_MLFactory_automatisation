@@ -33,6 +33,7 @@ autodoc_mock_imports = [
     "boto3",
     "requests",
     "dotenv",
+    "prefect",
 ]
 
 templates_path = ["_templates"]

@@ -1,0 +1,173 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="fr" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Architecture de la ML Factory &mdash; ML Factory</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.svg"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=7a28dfa3"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/translations.js?v=e6b791cb"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Recherche" href="search.html" />
+    <link rel="next" title="Guide de Démarrage Rapide" href="guide.html" />
+    <link rel="prev" title="Bienvenue dans la documentation de ML Factory_automatisation !" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ML Factory
+              <img src="_static/favicon.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Rechercher docs" aria-label="Rechercher docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Documentation Générale:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Architecture de la ML Factory</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#composants-principaux">Composants Principaux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#arborescence-du-projet">Arborescence du Projet</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html">Guide de Démarrage Rapide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Référence du Code (API):</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">src</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ML Factory</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Architecture de la ML Factory</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/architecture.md.txt" rel="nofollow"> Afficher la source de la page</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="architecture-de-la-ml-factory">
+<h1>Architecture de la ML Factory<a class="headerlink" href="#architecture-de-la-ml-factory" title="Lien vers cette rubrique"></a></h1>
+<p>L’infrastructure de la ML Factory repose sur une architecture de microservices conteneurisée, assurant la séparation stricte entre l’entraînement des modèles et leur inférence en production.</p>
+<section id="composants-principaux">
+<h2>Composants Principaux<a class="headerlink" href="#composants-principaux" title="Lien vers cette rubrique"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>MinIO (S3 Compatible)</strong></p>
+<ul class="simple">
+<li><p>Rôle : Stockage des artefacts (Data Lake / Model Lake).</p></li>
+<li><p>Tous les fichiers binaires <code class="docutils literal notranslate"><span class="pre">.pkl</span></code> générés par Scikit-Learn sont sauvegardés ici.</p></li>
+</ul>
+</li>
+<li><p><strong>MLflow Tracking &amp; Registry</strong></p>
+<ul class="simple">
+<li><p>Rôle : Cerveau MLOps.</p></li>
+<li><p>Suivi des métriques (Accuracy, Loss).</p></li>
+<li><p>Gestion du cycle de vie des modèles via le système d”<strong>Alias</strong> (ex: <code class="docutils literal notranslate"><span class="pre">production</span></code>).</p></li>
+</ul>
+</li>
+<li><p><strong>FastAPI (Inférence)</strong></p>
+<ul class="simple">
+<li><p>Rôle : Servir le modèle.</p></li>
+<li><p>Implémente une logique de <strong>Hot-Reloading</strong> : interroge MLflow à chaque requête pour s’assurer que le modèle chargé en RAM est bien la version taguée « production », évitant ainsi les redémarrages du serveur.</p></li>
+</ul>
+</li>
+<li><p><strong>Streamlit (Front-End)</strong></p>
+<ul class="simple">
+<li><p>Rôle : Interface utilisateur.</p></li>
+<li><p>Communique de manière asynchrone avec FastAPI.</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="arborescence-du-projet">
+<h2>Arborescence du Projet<a class="headerlink" href="#arborescence-du-projet" title="Lien vers cette rubrique"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>MLOPS_MLFACTORY/
+├──<span class="w"> </span>data/<span class="w">                   </span><span class="c1"># Données générées pour les tests (partagé via volume Docker)</span>
+│<span class="w">   </span>└──<span class="w"> </span>iris_test.csv<span class="w">       </span><span class="c1"># Fichier CSV utilisé par le Front-end</span>
+├──<span class="w"> </span>src/
+│<span class="w">   </span>├──<span class="w"> </span>api/<span class="w">                </span><span class="c1"># Backend FastAPI</span>
+│<span class="w">   </span>│<span class="w">   </span>├──<span class="w"> </span>main.py<span class="w">         </span><span class="c1"># Logique de rechargement à chaud et inférence</span>
+│<span class="w">   </span>│<span class="w">   </span>└──<span class="w"> </span>Dockerfile<span class="w">      </span><span class="c1"># Image pour l&#39;API</span>
+│<span class="w">   </span>├──<span class="w"> </span>front/<span class="w">              </span><span class="c1"># Interface Streamlit</span>
+│<span class="w">   </span>│<span class="w">   </span>├──<span class="w"> </span>app.py<span class="w">          </span><span class="c1"># Visualisation et interaction utilisateur</span>
+│<span class="w">   </span>│<span class="w">   </span>└──<span class="w"> </span>Dockerfile<span class="w">      </span><span class="c1"># Image pour le Front-end</span>
+│<span class="w">   </span>└──<span class="w"> </span>train/<span class="w">              </span><span class="c1"># Pipeline d&#39;entraînement</span>
+│<span class="w">       </span>└──<span class="w"> </span>train.py<span class="w">        </span><span class="c1"># Entraînement, log MLflow et gestion des alias</span>
+├──<span class="w"> </span>.env<span class="w">                    </span><span class="c1"># Variables d&#39;environnement (Secrets et URLs)</span>
+├──<span class="w"> </span>docker-compose.yml<span class="w">      </span><span class="c1"># Orchestration des services (MinIO, MLflow, API, Front)</span>
+├──<span class="w"> </span>generate_data.py<span class="w">        </span><span class="c1"># Script de création du dataset de test</span>
+└──<span class="w"> </span>pyproject.toml<span class="w">          </span><span class="c1"># Gestion des dépendances avec uv</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Pied de page">
+        <a href="index.html" class="btn btn-neutral float-left" title="Bienvenue dans la documentation de ML Factory_automatisation !" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Précédent</a>
+        <a href="guide.html" class="btn btn-neutral float-right" title="Guide de Démarrage Rapide" accesskey="n" rel="next">Suivant <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Droits d'auteur 2026, AnnaVitry.</p>
+  </div>
+
+  Compilé avec <a href="https://www.sphinx-doc.org/">Sphinx</a> en utilisant un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thème</a>
+    fourni par <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,253 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="fr" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.api.main &mdash; ML Factory</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/favicon.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=7a28dfa3"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/translations.js?v=e6b791cb"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Recherche" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ML Factory
+              <img src="../../../_static/favicon.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Rechercher docs" aria-label="Rechercher docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Documentation Générale:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture de la ML Factory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide.html">Guide de Démarrage Rapide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Référence du Code (API):</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">src</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ML Factory</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Code du module</a></li>
+      <li class="breadcrumb-item active">src.api.main</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Code source de src.api.main</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module principal de l&#39;API FastAPI pour l&#39;inférence MLOps.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlflow</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlflow.pyfunc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mlflow.tracking</span><span class="w"> </span><span class="kn">import</span> <span class="n">MlflowClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+
+<span class="c1"># Dans src/api/main.py</span>
+
+
+<span class="n">load_dotenv</span><span class="p">()</span>  <span class="c1"># Charge les variables du .env</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;ML Factory API&quot;</span><span class="p">)</span>
+
+<span class="c1"># Configuration via variables d&#39;environnement</span>
+<span class="n">MLFLOW_URI</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MLFLOW_TRACKING_URI&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:5000&quot;</span><span class="p">)</span>
+<span class="n">MODEL_NAME</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span> <span class="s2">&quot;iris_model&quot;</span><span class="p">)</span>
+<span class="n">MODEL_ALIAS</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MODEL_ALIAS&quot;</span><span class="p">,</span> <span class="s2">&quot;production&quot;</span><span class="p">)</span>
+<span class="n">model_uri</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;models:/</span><span class="si">{</span><span class="n">MODEL_NAME</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">MODEL_ALIAS</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="c1"># Initialisation du client</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">MlflowClient</span><span class="p">(</span><span class="n">tracking_uri</span><span class="o">=</span><span class="n">MLFLOW_URI</span><span class="p">)</span>
+
+<span class="c1"># Cache en mémoire pour éviter de recharger si la version n&#39;a pas changé [cite: 101]</span>
+<span class="n">state</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="IrisData">
+<a class="viewcode-back" href="../../../api.html#src.api.main.IrisData">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IrisData</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Schéma de validation des données d&#39;entrée.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        sepal_length (float): Longueur du sépale en cm.</span>
+<span class="sd">        sepal_width (float): Largeur du sépale en cm.</span>
+<span class="sd">        petal_length (float): Longueur du pétale en cm.</span>
+<span class="sd">        petal_width (float): Largeur du pétale en cm.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">sepal_length</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">sepal_width</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">petal_length</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">petal_width</span><span class="p">:</span> <span class="nb">float</span></div>
+
+
+
+<div class="viewcode-block" id="load_production_model">
+<a class="viewcode-back" href="../../../api.html#src.api.main.load_production_model">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_production_model</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Charge ou met à jour le modèle MLflow en mémoire vive (Hot-Reloading).</span>
+
+<span class="sd">    Cette fonction vérifie l&#39;alias défini dans l&#39;environnement (ex: &#39;production&#39;).</span>
+<span class="sd">    Si la version sur le serveur MLflow est plus récente que celle en cache,</span>
+<span class="sd">    elle télécharge le nouveau binaire. Sinon, elle conserve le modèle actuel pour</span>
+<span class="sd">    minimiser la latence.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: Un tuple contenant :</span>
+<span class="sd">            - model (mlflow.pyfunc.PyFuncModel): Le modèle Scikit-Learn prêt pour l&#39;inférence.</span>
+<span class="sd">            - version (str): Le numéro de version actuellement chargé (ex: &quot;v3&quot;).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException: Erreur 404 si le serveur MLflow est injoignable ou si l&#39;alias n&#39;existe pas.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># 1. On demande quelle est la version actuelle de l&#39;alias &#39;Production&#39; [cite: 108]</span>
+        <span class="n">alias_info</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_model_version_by_alias</span><span class="p">(</span><span class="n">MODEL_NAME</span><span class="p">,</span> <span class="n">MODEL_ALIAS</span><span class="p">)</span>
+        <span class="n">prod_version</span> <span class="o">=</span> <span class="n">alias_info</span><span class="o">.</span><span class="n">version</span>
+
+        <span class="c1"># 2. Si le modèle n&#39;est pas en cache ou si la version a changé [cite: 109]</span>
+        <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">prod_version</span> <span class="o">!=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;version&quot;</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🔄 Rechargement à chaud : Passage à la version </span><span class="si">{</span><span class="n">prod_version</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">model_uri</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;models:/</span><span class="si">{</span><span class="n">MODEL_NAME</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">MODEL_ALIAS</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">pyfunc</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">model_uri</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">&quot;version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prod_version</span>
+
+        <span class="k">return</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;version&quot;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Erreur MLflow: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/predict&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">IrisData</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Exécute une inférence sur les dimensions d&#39;une fleur Iris.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (IrisData): Objet Pydantic contenant les 4 dimensions de la fleur en centimètres.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Le résultat de la prédiction, incluant la classe, la version du modèle et le statut.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        Voici un exemple de requête valide, basé sur une fleur de type Virginica issue de notre dataset de test :</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import requests</span>
+
+<span class="sd">            payload = {</span>
+<span class="sd">                &quot;sepal_length&quot;: 7.7,</span>
+<span class="sd">                &quot;sepal_width&quot;: 2.6,</span>
+<span class="sd">                &quot;petal_length&quot;: 6.9,</span>
+<span class="sd">                &quot;petal_width&quot;: 2.3</span>
+<span class="sd">            }</span>
+<span class="sd">            response = requests.post(&quot;http://localhost:8000/predict&quot;, json=payload)</span>
+<span class="sd">            print(response.json())</span>
+<span class="sd">            # Output attendu : {&quot;prediction&quot;: 2, &quot;model_version&quot;: &quot;1&quot;, &quot;status&quot;: &quot;success&quot;}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Récupération dynamique du modèle</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">version</span> <span class="o">=</span> <span class="n">load_production_model</span><span class="p">()</span>
+
+    <span class="c1"># Préparation des données pour scikit-learn</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">sepal_length</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">sepal_width</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">petal_length</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">petal_width</span><span class="p">]</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Inférence</span>
+    <span class="n">prediction</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+
+    <span class="c1"># On renvoie la prédiction ET la version pour la traçabilité</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;prediction&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">prediction</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+        <span class="s2">&quot;model_version&quot;</span><span class="p">:</span> <span class="n">version</span><span class="p">,</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Vérifie l&#39;état de santé de l&#39;API.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: Un dictionnaire confirmant que l&#39;API est en ligne.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;up&quot;</span><span class="p">}</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Droits d'auteur 2026, AnnaVitry.</p>
+  </div>
+
+  Compilé avec <a href="https://www.sphinx-doc.org/">Sphinx</a> en utilisant un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thème</a>
+    fourni par <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

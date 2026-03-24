@@ -1,0 +1,326 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="fr" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>prefect &mdash; ML Factory</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=7a28dfa3"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/translations.js?v=e6b791cb"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Recherche" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ML Factory
+              <img src="../_static/favicon.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Rechercher docs" aria-label="Rechercher docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Documentation Générale:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture de la ML Factory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide.html">Guide de Démarrage Rapide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Référence du Code (API):</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">src</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ML Factory</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Code du module</a></li>
+      <li class="breadcrumb-item active">prefect</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Code source de prefect</h1><div class="highlight"><pre>
+<span></span><span class="c1"># isort: skip_file</span>
+
+<span class="c1"># Setup version and path constants</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">_build_info</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.machinery</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModuleSpec</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.main</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">allow_failure</span><span class="p">,</span>
+        <span class="n">apause_flow_run</span><span class="p">,</span>
+        <span class="n">aresume_flow_run</span><span class="p">,</span>
+        <span class="n">aserve</span><span class="p">,</span>
+        <span class="n">asuspend_flow_run</span><span class="p">,</span>
+        <span class="n">flow</span><span class="p">,</span>
+        <span class="n">Flow</span><span class="p">,</span>
+        <span class="n">get_client</span><span class="p">,</span>
+        <span class="n">get_run_logger</span><span class="p">,</span>
+        <span class="n">pause_flow_run</span><span class="p">,</span>
+        <span class="n">resume_flow_run</span><span class="p">,</span>
+        <span class="n">serve</span><span class="p">,</span>
+        <span class="n">State</span><span class="p">,</span>
+        <span class="n">suspend_flow_run</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">,</span>
+        <span class="n">task</span><span class="p">,</span>
+        <span class="n">Task</span><span class="p">,</span>
+        <span class="n">Transaction</span><span class="p">,</span>
+        <span class="n">unmapped</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">prefect.deployments.runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">deploy</span>
+
+    <span class="n">__spec__</span><span class="p">:</span> <span class="n">ModuleSpec</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">VersionInfo</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">(</span><span class="s2">&quot;_FullRevisionId&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;full-revisionid&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">})):</span>
+        <span class="n">version</span><span class="p">:</span> <span class="nb">str</span>
+        <span class="n">dirty</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span>
+        <span class="n">error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+        <span class="n">date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="n">_build_info</span><span class="o">.</span><span class="n">__version__</span>
+<span class="n">__version_info__</span><span class="p">:</span> <span class="s2">&quot;VersionInfo&quot;</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
+    <span class="s2">&quot;VersionInfo&quot;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span>
+        <span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="n">_build_info</span><span class="o">.</span><span class="n">__build_date__</span><span class="p">,</span>
+        <span class="s2">&quot;full-revisionid&quot;</span><span class="p">:</span> <span class="n">_build_info</span><span class="o">.</span><span class="n">__git_commit__</span><span class="p">,</span>
+        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;dirty&quot;</span><span class="p">:</span> <span class="n">_build_info</span><span class="o">.</span><span class="n">__dirty__</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+
+<span class="c1"># The absolute path to this module</span>
+<span class="n">__module_path__</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+<span class="c1"># The absolute path to the root of the repository, only valid for use during development</span>
+<span class="n">__development_base_path__</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">__module_path__</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="c1"># The absolute path to the built UI within the Python module, used by</span>
+<span class="c1"># `prefect server start` to serve a dynamic build of the UI</span>
+<span class="n">__ui_static_subpath__</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">__module_path__</span> <span class="o">/</span> <span class="s2">&quot;server&quot;</span> <span class="o">/</span> <span class="s2">&quot;ui_build&quot;</span>
+
+<span class="c1"># The absolute path to the built UI within the Python module</span>
+<span class="n">__ui_static_path__</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">__module_path__</span> <span class="o">/</span> <span class="s2">&quot;server&quot;</span> <span class="o">/</span> <span class="s2">&quot;ui&quot;</span>
+
+<span class="c1"># The absolute path to the built V2 UI within the Python module, used by</span>
+<span class="c1"># `prefect server start` to serve a dynamic build of the V2 UI</span>
+<span class="n">__ui_v2_static_subpath__</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">__module_path__</span> <span class="o">/</span> <span class="s2">&quot;server&quot;</span> <span class="o">/</span> <span class="s2">&quot;ui_v2_build&quot;</span>
+
+<span class="c1"># The absolute path to the built V2 UI within the Python module</span>
+<span class="n">__ui_v2_static_path__</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">__module_path__</span> <span class="o">/</span> <span class="s2">&quot;server&quot;</span> <span class="o">/</span> <span class="s2">&quot;ui-v2&quot;</span>
+
+<span class="k">del</span> <span class="n">_build_info</span><span class="p">,</span> <span class="n">pathlib</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_initialize_plugins</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize the experimental plugin system if enabled.</span>
+
+<span class="sd">    This runs automatically when Prefect is imported and plugins are enabled</span>
+<span class="sd">    via experiments.plugins.enabled setting. Errors are logged but don&#39;t prevent</span>
+<span class="sd">    Prefect from loading.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Import here to avoid circular imports and defer cost until needed</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">prefect.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_current_settings</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">get_current_settings</span><span class="p">()</span><span class="o">.</span><span class="n">experiments</span><span class="o">.</span><span class="n">plugins</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="kn">import</span><span class="w"> </span><span class="nn">anyio</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">prefect._experimental.plugins</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_startup_hooks</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">prefect._experimental.plugins.spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">HookContext</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">prefect.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">refresh_global_settings_context</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">prefect.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">prefect.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_current_settings</span>
+
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">HookContext</span><span class="p">(</span>
+            <span class="n">prefect_version</span><span class="o">=</span><span class="n">__version__</span><span class="p">,</span>
+            <span class="n">api_url</span><span class="o">=</span><span class="n">get_current_settings</span><span class="p">()</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">url</span><span class="p">,</span>
+            <span class="n">logger_factory</span><span class="o">=</span><span class="n">get_logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Run plugin hooks synchronously during import</span>
+        <span class="n">anyio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">run_startup_hooks</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+
+        <span class="c1"># Refresh global settings context to pick up any env vars set by plugins</span>
+        <span class="n">refresh_global_settings_context</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">SystemExit</span><span class="p">:</span>
+        <span class="c1"># Re-raise SystemExit from strict mode</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Log but don&#39;t crash on plugin errors</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">prefect.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+            <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="s2">&quot;prefect.plugins&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Failed to initialize plugins: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># If even logging fails, print to stderr and continue</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to initialize plugins: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_initialize_sdk_analytics</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize SDK analytics for telemetry.</span>
+
+<span class="sd">    This runs automatically when Prefect is imported. Errors are silently</span>
+<span class="sd">    ignored to ensure analytics never impacts normal Prefect operation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">prefect._internal.analytics</span><span class="w"> </span><span class="kn">import</span> <span class="n">initialize_analytics</span>
+
+        <span class="n">initialize_analytics</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="c1"># Never let analytics initialization impact Prefect</span>
+        <span class="k">pass</span>
+
+
+<span class="c1"># Initialize SDK analytics on import</span>
+<span class="n">_initialize_sdk_analytics</span><span class="p">()</span>
+
+<span class="n">_public_api</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;allow_failure&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;apause_flow_run&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;aresume_flow_run&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;aserve&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;asuspend_flow_run&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;deploy&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.deployments.runner&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;flow&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;Flow&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;get_client&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;get_run_logger&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;pause_flow_run&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;resume_flow_run&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;serve&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;State&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;suspend_flow_run&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;task&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;Task&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;Transaction&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;unmapped&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">__spec__</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;.main&quot;</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="c1"># Declare API for type-checkers</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;__version__&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;allow_failure&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;apause_flow_run&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;aresume_flow_run&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;aserve&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;asuspend_flow_run&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;deploy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;flow&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Flow&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_client&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_run_logger&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pause_flow_run&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;resume_flow_run&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;serve&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;State&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;suspend_flow_run&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tags&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;task&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Task&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Transaction&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;unmapped&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">attr_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">dynamic_attr</span> <span class="o">:=</span> <span class="n">_public_api</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">attr_name</span><span class="p">))</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">attr_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">package</span><span class="o">=</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="n">package</span><span class="p">,</span> <span class="n">mname</span> <span class="o">=</span> <span class="n">dynamic_attr</span>
+        <span class="k">if</span> <span class="n">mname</span> <span class="o">==</span> <span class="s2">&quot;__module__&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">attr_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">package</span><span class="o">=</span><span class="n">package</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">mname</span><span class="p">,</span> <span class="n">package</span><span class="o">=</span><span class="n">package</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ModuleNotFoundError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+        <span class="n">mname</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">attr</span> <span class="o">=</span> <span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="n">ctx</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">mname</span><span class="p">,</span> <span class="s2">&quot;obj&quot;</span><span class="p">:</span> <span class="n">attr</span><span class="p">}</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;module </span><span class="si">{</span><span class="n">mname</span><span class="si">}</span><span class="s2"> has no attribute </span><span class="si">{</span><span class="n">attr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">ctx</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">ex</span>
+
+
+<span class="c1"># Initialize plugins on import if enabled</span>
+<span class="c1"># Must be after __getattr__ so lazy imports work when plugins import from prefect</span>
+<span class="n">_initialize_plugins</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Droits d'auteur 2026, AnnaVitry.</p>
+  </div>
+
+  Compilé avec <a href="https://www.sphinx-doc.org/">Sphinx</a> en utilisant un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thème</a>
+    fourni par <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

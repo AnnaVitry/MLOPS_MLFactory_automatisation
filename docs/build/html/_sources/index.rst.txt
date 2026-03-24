@@ -3,22 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-ML Factory documentation
-========================
+Bienvenue dans la documentation de ML Factory_automatisation !
+===============================================================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.Bienvenue dans la documentation de ML Factory !
-===============================================
+.. include:: ../../README.md
+   :parser: myst_parser.sphinx_
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contenu:
+   :caption: Documentation Générale:
+
+   architecture
+   guide
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Référence du Code (API):
 
    modules
-
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
