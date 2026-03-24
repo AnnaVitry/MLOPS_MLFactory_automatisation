@@ -1,4 +1,4 @@
-# 🌸 MLOps Factory_automatisation - Iris Dataset
+# 🌸 MLOps Factory_automatisation du Iris Dataset
 
 [![CI Pipeline](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/ci.yml/badge.svg)](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/ci.yml)
 [![CD Pipeline](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/cd.yml/badge.svg)](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation/actions/workflows/cd.yml)
@@ -23,14 +23,15 @@ L'**Iris ML Factory_automatisation** n'est pas un simple script d'apprentissage 
 Chaque composant a un rôle strict et isolé. Voici le casting de l'architecture :
 
 1. **L'Orchestrateur (Prefect) :** Le cerveau temporel. Il remplace les scripts manuels. Il planifie les entraînements (cron) et ordonne au *Docker Engine* de créer des conteneurs éphémères pour exécuter le code Python dans un environnement vierge et isolé, avant de les détruire.
-2. **L'Entrepôt de Données et Modèles (MinIO) :** L'espace de stockage physique (compatible S3 S3). Il conserve les binaires bruts des modèles générés (`.pkl`).
+2. **L'Entrepôt de Données et Modèles (MinIO) :** L'espace de stockage physique (compatible S3). Il conserve les binaires bruts des modèles générés (`.pkl`).
 3. **Le Registre et Traceur (MLflow) :** Le centre de contrôle. Il ne stocke pas les fichiers, mais trace les métriques (Accuracy), les paramètres, et gère le cycle de vie des modèles via un système d'alias (ex: tagguer la Version 37 comme `production`).
 4. **Le Moteur d'Inférence (FastAPI) :** L'API REST. Elle interroge MLflow pour savoir quelle est la version en `production`, puis télécharge le binaire correspondant depuis MinIO pour répondre aux requêtes.
 5. **Le Tableau de Bord (Streamlit) :** L'interface utilisateur finale pour soumettre des données et visualiser les prédictions en temps réel.
 
-```bash
+```text
 MLOPS_MLFACTORY_automatisation/
 ├── data/                   # Fichiers CSV générés pour les tests
+├── docs/                   # Documentation technique Sphinx/ReadTheDocs
 ├── src/
 │   ├── api/                # Backend FastAPI (Inférence & Hot-Reloading)
 │   ├── front/              # Interface Streamlit (UI)
@@ -48,22 +49,22 @@ MLOPS_MLFACTORY_automatisation/
 L'infrastructure persistante est gérée par Docker Compose, tandis que l'exécution métier est confiée aux Workers Prefect.
 
 ### 1. Préparation des Fondations
-Clone le dépôt et assure-toi que ton fichier `.env` est correctement configuré.
-**Attention :** Le fichier `.env` lu par ton terminal local doit pointer vers `127.0.0.1` (et non `host.docker.internal` ou `minio`, qui sont réservés au réseau interne Docker).
+Clonez le dépôt et assurez-vous que votre fichier `.env` est correctement configuré.
+**Attention :** Le fichier `.env` lu par votre terminal local doit pointer vers `127.0.0.1` (et non `host.docker.internal` ou `minio`, qui sont réservés au réseau interne Docker).
 ```bash
 git clone [https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation.git](https://github.com/AnnaVitry/MLOPS_MLFactory_automatisation.git)
 cd MLOPS_MLFactory_automatisation
 ```
 
 ### 2. Allumage de l'Infrastructure Persistante
-Lance les bases de données, les serveurs de tracking et les interfaces web :
+Lancez les bases de données, les serveurs de tracking et les interfaces web :
 ```bash
 docker compose up -d --build
 ```
-*(Attends environ 15 secondes que la base de données de Prefect s'initialise correctement).*
+*(Attendez environ 15 secondes que la base de données de Prefect s'initialise correctement).*
 
 ### 3. Activer l'Automatisation MLOps (Prefect)
-Plutôt que d'exécuter l'entraînement sur ton propre terminal, nous allons compiler une image dédiée et allumer un ouvrier (Worker) qui attendra les ordres :
+Plutôt que d'exécuter l'entraînement sur un terminal local, nous allons compiler une image dédiée et allumer un ouvrier (Worker) qui attendra les ordres :
 
 ```bash
 # A. Construit l'image Docker du Worker et met à jour le serveur Prefect
@@ -133,7 +134,7 @@ Le projet applique une discipline logicielle stricte via **GitHub Actions** :
 * **CI (Continuous Integration)** : À chaque `push`, le code est audité contre les fuites de secrets (Gitleaks) et soumis à une analyse statique intransigeante (Linting PEP 8) par **Ruff**. Le pipeline échoue si le code n'est pas clinique.
 * **CD (Continuous Deployment)** : Une fois la CI validée, l'usine compile automatiquement :
   1. Les **Images Docker** (API & Front) poussées sur le *GitHub Container Registry* (GHCR).
-  2. La **Documentation Technique** (Sphinx/Diátaxis) déployée dynamiquement sur GitHub Pages.
+  2. La **Documentation Technique** (Sphinx/Diátaxis) compilée et déployée dynamiquement sur GitHub Pages.
 
 **[Consulter la Documentation Officielle Complète](https://annavitry.github.io/MLOPS_MLFactory_automatisation/)**
 
@@ -141,7 +142,7 @@ Le projet applique une discipline logicielle stricte via **GitHub Actions** :
 
 ##  ʕ•ᴥ•ʔっ · · · ✴ Maintenance & Dépannage Radical (Troubleshooting)
 
-L'architecture Docker peut parfois s'emmêler les pinceaux avec le cache ou les volumes (ex: conflits de mots de passe de base de données). Si l'environnement devient instable, applique la politique de la terre brûlée :
+L'architecture Docker peut parfois s'emmêler les pinceaux avec le cache ou les volumes (ex: conflits de mots de passe de base de données). Si l'environnement devient instable, appliquez la politique de la terre brûlée :
 
 ```bash
 # 1. Détruire l'infrastructure ET purger les mémoires corrompues (Volumes)
@@ -158,4 +159,4 @@ docker compose up -d --build
 > [!WARNING]
 > Le `down -v` ou le `volume prune` détruisent l'historique de MLflow, la base de données Prefect et les fichiers S3 dans MinIO. C'est une remise à zéro complète de l'usine.
 
-* **Erreur "404 Client Error: Not Found... fromImage=mlfactory-worker" :** Ton Worker Prefect tente de télécharger l'image depuis Internet au lieu de l'ordinateur local. Assure-toi d'avoir bien mis `image_pull_policy: "Never"` dans ton `prefect.yaml` au niveau de `job_variables`, et relance la commande `prefect deploy`.
+* **Erreur "404 Client Error: Not Found... fromImage=mlfactory-worker" :** Votre Worker Prefect tente de télécharger l'image depuis Internet au lieu de l'ordinateur local. Assurez-vous d'avoir bien mis `image_pull_policy: "Never"` dans votre `prefect.yaml` au niveau de `job_variables`, et relancez la commande `uv run prefect deploy`.

@@ -30,7 +30,12 @@ model_alias = os.getenv("MODEL_ALIAS", "production")
 
 @task(retries=3, retry_delay_seconds=5)
 def prepare_minio():
-    """Initialise le stockage S3 local (MinIO)."""
+    """
+    Initialise le stockage S3 local (MinIO).
+
+    Vérifie l'existence du bucket 'mlflow' et le crée si nécessaire.
+    Cette tâche est résiliente (3 tentatives).
+    """
     s3 = boto3.client("s3", endpoint_url=os.environ["MLFLOW_S3_ENDPOINT_URL"])
     buckets = [b["Name"] for b in s3.list_buckets()["Buckets"]]
     if "mlflow" not in buckets:
@@ -42,7 +47,16 @@ def prepare_minio():
 def train_and_register(
     model_choice: str = "logistic_regression", assign_production_alias: bool = True
 ):
-    """Entraîne et enregistre dynamiquement le modèle choisi."""
+    """
+    Entraîne un modèle et l'enregistre dans le registre MLflow.
+
+    Args:
+        model_choice (str): Le type de modèle à entraîner ("logistic_regression" ou "random_forest").
+        assign_production_alias (bool): Si True, définit ce modèle comme la version de production.
+
+    Returns:
+        None
+    """
     mlflow.set_tracking_uri(MLFLOW_URI)
     mlflow.set_experiment("Iris_Factory")
 
@@ -101,8 +115,12 @@ def pipeline_mlops(
     champion_model: str = "logistic_regression", run_challenger: bool = True
 ):
     """
-    Exécute le pipeline. Les paramètres de cette fonction deviennent
-    automatiquement des champs modifiables dans l'interface UI de Prefect !
+    Orchestrateur principal du cycle de vie du modèle (ML LifeCycle).
+
+    Ce Flow Prefect exécute séquentiellement :
+    1. La préparation de l'infrastructure de stockage (MinIO).
+    2. L'entraînement d'un modèle 'Champion' (LogisticRegression) mis en production.
+    3. L'entraînement d'un modèle 'Challenger' (RandomForest) pour comparaison.
     """
     print(f"Démarrage du pipeline... Modèle cible en production : {champion_model}")
     prepare_minio()
