@@ -49,7 +49,14 @@
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Code Source de l’Usine MLOps</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide.html">Guide de Démarrage Rapide</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Architecture de la ML Factory</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#composants-principaux">Composants Principaux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#composants-principaux">Composants Principaux</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#prefect-orchestrateur-docker-worker">1. Prefect (Orchestrateur &amp; Docker Worker)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#minio-s3-compatible">2. MinIO (S3 Compatible)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mlflow-tracking-registry">3. MLflow Tracking &amp; Registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fastapi-inference">4. FastAPI (Inférence)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#streamlit-front-end">5. Streamlit (Front-End)</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#arborescence-du-projet">Arborescence du Projet</a></li>
 </ul>
 </li>
@@ -81,55 +88,58 @@
              
   <section id="architecture-de-la-ml-factory">
 <h1>Architecture de la ML Factory<a class="headerlink" href="#architecture-de-la-ml-factory" title="Lien vers cette rubrique"></a></h1>
-<p>L’infrastructure de la ML Factory repose sur une architecture de microservices conteneurisée, assurant la séparation stricte entre l’entraînement des modèles et leur inférence en production.</p>
+<p>L’infrastructure de la ML Factory repose sur une architecture <strong>MLOps Cloud-Native</strong>, assurant une séparation stricte entre l’orchestration, l’entraînement, le stockage et l’inférence.</p>
 <section id="composants-principaux">
 <h2>Composants Principaux<a class="headerlink" href="#composants-principaux" title="Lien vers cette rubrique"></a></h2>
-<ol class="arabic simple">
-<li><p><strong>MinIO (S3 Compatible)</strong></p>
+<section id="prefect-orchestrateur-docker-worker">
+<h3>1. Prefect (Orchestrateur &amp; Docker Worker)<a class="headerlink" href="#prefect-orchestrateur-docker-worker" title="Lien vers cette rubrique"></a></h3>
 <ul class="simple">
-<li><p>Rôle : Stockage des artefacts (Data Lake / Model Lake).</p></li>
-<li><p>Tous les fichiers binaires <code class="docutils literal notranslate"><span class="pre">.pkl</span></code> générés par Scikit-Learn sont sauvegardés ici.</p></li>
+<li><p><strong>Rôle :</strong> Le chef d’orchestre temporel.</p></li>
+<li><p>Il remplace l’exécution manuelle des scripts. Il planifie les tâches (via Cron) et ordonne au <em>Docker Engine</em> de créer des conteneurs éphémères pour entraîner les modèles dans un environnement vierge avant de les détruire.</p></li>
 </ul>
-</li>
-<li><p><strong>MLflow Tracking &amp; Registry</strong></p>
+</section>
+<section id="minio-s3-compatible">
+<h3>2. MinIO (S3 Compatible)<a class="headerlink" href="#minio-s3-compatible" title="Lien vers cette rubrique"></a></h3>
 <ul class="simple">
-<li><p>Rôle : Cerveau MLOps.</p></li>
-<li><p>Suivi des métriques (Accuracy, Loss).</p></li>
-<li><p>Gestion du cycle de vie des modèles via le système d”<strong>Alias</strong> (ex: <code class="docutils literal notranslate"><span class="pre">production</span></code>).</p></li>
+<li><p><strong>Rôle :</strong> Stockage physique (Artifact Store).</p></li>
+<li><p>Tous les fichiers binaires <code class="docutils literal notranslate"><span class="pre">.pkl</span></code> générés par Scikit-Learn sont sauvegardés de manière pérenne dans le bucket <code class="docutils literal notranslate"><span class="pre">mlflow</span></code>.</p></li>
 </ul>
-</li>
-<li><p><strong>FastAPI (Inférence)</strong></p>
+</section>
+<section id="mlflow-tracking-registry">
+<h3>3. MLflow Tracking &amp; Registry<a class="headerlink" href="#mlflow-tracking-registry" title="Lien vers cette rubrique"></a></h3>
 <ul class="simple">
-<li><p>Rôle : Servir le modèle.</p></li>
-<li><p>Implémente une logique de <strong>Hot-Reloading</strong> : interroge MLflow à chaque requête pour s’assurer que le modèle chargé en RAM est bien la version taguée « production », évitant ainsi les redémarrages du serveur.</p></li>
+<li><p><strong>Rôle :</strong> Le centre de contrôle (Model Registry).</p></li>
+<li><p>Suivi des métriques (Accuracy), des hyperparamètres, et gestion du cycle de vie des modèles via le système d’Alias (ex: assigner l’étiquette <code class="docutils literal notranslate"><span class="pre">production</span></code> au modèle le plus performant).</p></li>
 </ul>
-</li>
-<li><p><strong>Streamlit (Front-End)</strong></p>
+</section>
+<section id="fastapi-inference">
+<h3>4. FastAPI (Inférence)<a class="headerlink" href="#fastapi-inference" title="Lien vers cette rubrique"></a></h3>
 <ul class="simple">
-<li><p>Rôle : Interface utilisateur.</p></li>
-<li><p>Communique de manière asynchrone avec FastAPI.</p></li>
+<li><p><strong>Rôle :</strong> Le moteur de prédiction.</p></li>
+<li><p>Implémente une logique de <strong>Hot-Reloading</strong> : à chaque requête, il interroge MLflow pour s’assurer que le modèle chargé en RAM correspond bien à l’alias <code class="docutils literal notranslate"><span class="pre">production</span></code>. Si l’alias change, il télécharge silencieusement le nouveau binaire depuis MinIO sans interrompre le service.</p></li>
 </ul>
-</li>
-</ol>
+</section>
+<section id="streamlit-front-end">
+<h3>5. Streamlit (Front-End)<a class="headerlink" href="#streamlit-front-end" title="Lien vers cette rubrique"></a></h3>
+<ul class="simple">
+<li><p><strong>Rôle :</strong> Interface utilisateur.</p></li>
+<li><p>Communique de manière asynchrone avec FastAPI pour offrir une visualisation en temps réel.</p></li>
+</ul>
+</section>
 </section>
 <section id="arborescence-du-projet">
 <h2>Arborescence du Projet<a class="headerlink" href="#arborescence-du-projet" title="Lien vers cette rubrique"></a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>MLOPS_MLFACTORY/
-├──<span class="w"> </span>data/<span class="w">                   </span><span class="c1"># Données générées pour les tests (partagé via volume Docker)</span>
-│<span class="w">   </span>└──<span class="w"> </span>iris_test.csv<span class="w">       </span><span class="c1"># Fichier CSV utilisé par le Front-end</span>
+├──<span class="w"> </span>data/<span class="w">                   </span><span class="c1"># Fichiers CSV générés pour les tests</span>
+├──<span class="w"> </span>docs/<span class="w">                   </span><span class="c1"># Documentation technique Sphinx/ReadTheDocs</span>
 ├──<span class="w"> </span>src/
-│<span class="w">   </span>├──<span class="w"> </span>api/<span class="w">                </span><span class="c1"># Backend FastAPI</span>
-│<span class="w">   </span>│<span class="w">   </span>├──<span class="w"> </span>main.py<span class="w">         </span><span class="c1"># Logique de rechargement à chaud et inférence</span>
-│<span class="w">   </span>│<span class="w">   </span>└──<span class="w"> </span>Dockerfile<span class="w">      </span><span class="c1"># Image pour l&#39;API</span>
-│<span class="w">   </span>├──<span class="w"> </span>front/<span class="w">              </span><span class="c1"># Interface Streamlit</span>
-│<span class="w">   </span>│<span class="w">   </span>├──<span class="w"> </span>app.py<span class="w">          </span><span class="c1"># Visualisation et interaction utilisateur</span>
-│<span class="w">   </span>│<span class="w">   </span>└──<span class="w"> </span>Dockerfile<span class="w">      </span><span class="c1"># Image pour le Front-end</span>
-│<span class="w">   </span>└──<span class="w"> </span>train/<span class="w">              </span><span class="c1"># Pipeline d&#39;entraînement</span>
-│<span class="w">       </span>└──<span class="w"> </span>train.py<span class="w">        </span><span class="c1"># Entraînement, log MLflow et gestion des alias</span>
-├──<span class="w"> </span>.env<span class="w">                    </span><span class="c1"># Variables d&#39;environnement (Secrets et URLs)</span>
-├──<span class="w"> </span>docker-compose.yml<span class="w">      </span><span class="c1"># Orchestration des services (MinIO, MLflow, API, Front)</span>
-├──<span class="w"> </span>generate_data.py<span class="w">        </span><span class="c1"># Script de création du dataset de test</span>
-└──<span class="w"> </span>pyproject.toml<span class="w">          </span><span class="c1"># Gestion des dépendances avec uv</span>
+│<span class="w">   </span>├──<span class="w"> </span>api/<span class="w">                </span><span class="c1"># Backend FastAPI (Inférence &amp; Hot-Reloading)</span>
+│<span class="w">   </span>├──<span class="w"> </span>front/<span class="w">              </span><span class="c1"># Interface Streamlit (UI)</span>
+│<span class="w">   </span>└──<span class="w"> </span>train/<span class="w">              </span><span class="c1"># Pipeline d&#39;entraînement métier (Flow Prefect)</span>
+├──<span class="w"> </span>prefect.yaml<span class="w">            </span><span class="c1"># Plan de vol de Prefect (Déploiement et Worker)</span>
+├──<span class="w"> </span>.env<span class="w">                    </span><span class="c1"># Variables d&#39;environnement locales (Secrets et URLs)</span>
+├──<span class="w"> </span>docker-compose.yml<span class="w">      </span><span class="c1"># L&#39;usine (MinIO, MLflow, API, Front, Prefect DB)</span>
+└──<span class="w"> </span>pyproject.toml<span class="w">          </span><span class="c1"># Gestion stricte des dépendances avec uv</span>
 </pre></div>
 </div>
 </section>

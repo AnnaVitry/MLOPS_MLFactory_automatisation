@@ -49,8 +49,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Code Source de l’Usine MLOps</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Guide de Démarrage Rapide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#demarrage-de-l-infrastructure">1. Démarrage de l’infrastructure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#entrainement-d-un-modele">2. Entraînement d’un modèle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#demarrage-de-l-infrastructure-persistante">1. Démarrage de l’Infrastructure Persistante</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#demarrage-de-l-automatisation-prefect-worker">2. Démarrage de l’Automatisation (Prefect Worker)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#entrainement-d-un-modele-et-hot-reloading">3. Entraînement d’un modèle et Hot-Reloading</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture de la ML Factory</a></li>
@@ -82,23 +83,38 @@
              
   <section id="guide-de-demarrage-rapide">
 <h1>Guide de Démarrage Rapide<a class="headerlink" href="#guide-de-demarrage-rapide" title="Lien vers cette rubrique"></a></h1>
-<p>Ce guide explique comment lancer l’usine en local pour le développement.</p>
-<section id="demarrage-de-l-infrastructure">
-<h2>1. Démarrage de l’infrastructure<a class="headerlink" href="#demarrage-de-l-infrastructure" title="Lien vers cette rubrique"></a></h2>
-<p>L’ensemble des services est orchestré par Docker Compose.</p>
+<p>Ce guide explique comment allumer l’usine logicielle en local et utiliser l’orchestrateur Prefect pour piloter les entraînements.</p>
+<section id="demarrage-de-l-infrastructure-persistante">
+<h2>1. Démarrage de l’Infrastructure Persistante<a class="headerlink" href="#demarrage-de-l-infrastructure-persistante" title="Lien vers cette rubrique"></a></h2>
+<p>L’ensemble des services de base (Bases de données, Serveurs, API, Front) est orchestré par Docker Compose.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build
 </pre></div>
 </div>
+<p><em>(Attendez une quinzaine de secondes pour que la base de données de Prefect s’initialise correctement).</em></p>
 </section>
-<section id="entrainement-d-un-modele">
-<h2>2. Entraînement d’un modèle<a class="headerlink" href="#entrainement-d-un-modele" title="Lien vers cette rubrique"></a></h2>
-<p>Pour générer une nouvelle version du modèle et l’envoyer dans MLflow :</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>src/train/train.py
+<section id="demarrage-de-l-automatisation-prefect-worker">
+<h2>2. Démarrage de l’Automatisation (Prefect Worker)<a class="headerlink" href="#demarrage-de-l-automatisation-prefect-worker" title="Lien vers cette rubrique"></a></h2>
+<p>L’entraînement n’est plus manuel. Il est confié à un <strong>Ouvrier Docker (Worker)</strong> qui exécutera le code dans des conteneurs éphémères.</p>
+<p>A. Mettez à jour le serveur avec les instructions de déploiement :</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>prefect<span class="w"> </span>deploy<span class="w"> </span>-n<span class="w"> </span>production-training-job
 </pre></div>
 </div>
-<blockquote>
-<div><p>Note : Modifiez les hyperparamètres dans le script pour observer la création d’une nouvelle version.</p>
-</div></blockquote>
+<p>B. Allumez le Worker (Laissez ce terminal ouvert) :</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>prefect<span class="w"> </span>worker<span class="w"> </span>start<span class="w"> </span>--pool<span class="w"> </span><span class="s1">&#39;docker-pool&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="entrainement-d-un-modele-et-hot-reloading">
+<h2>3. Entraînement d’un modèle et Hot-Reloading<a class="headerlink" href="#entrainement-d-un-modele-et-hot-reloading" title="Lien vers cette rubrique"></a></h2>
+<p>Pour générer une nouvelle version du modèle et tester le changement en direct :</p>
+<ol class="arabic simple">
+<li><p>Ouvrez l’interface Prefect : <strong><a class="reference external" href="http://localhost:4200">http://localhost:4200</a></strong></p></li>
+<li><p>Allez dans <strong>Deployments</strong> -&gt; <code class="docutils literal notranslate"><span class="pre">production-training-job</span></code>.</p></li>
+<li><p>Cliquez sur la flèche à côté de <strong>Run</strong> -&gt; <strong>Custom Run</strong>.</p></li>
+<li><p>Changez le paramètre <code class="docutils literal notranslate"><span class="pre">champion_model</span></code> (ex: passez de <code class="docutils literal notranslate"><span class="pre">logistic_regression</span></code> à <code class="docutils literal notranslate"><span class="pre">random_forest</span></code>) et validez.</p></li>
+<li><p>Allez sur votre application Streamlit <strong><a class="reference external" href="http://localhost:8501">http://localhost:8501</a></strong> et lancez une prédiction. L’API téléchargera la nouvelle version automatiquement !</p></li>
+</ol>
+<p><em>(Note : Pour des tests de développement purs sans Docker, vous pouvez toujours utiliser <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">src/train/train.py</span></code> en local).</em></p>
 </section>
 </section>
 
