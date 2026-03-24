@@ -41,7 +41,7 @@ exclude_patterns = []
 language = "fr"
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 html_static_path = ["_static"]
 html_logo = "_static/img/favicon.svg"  # Affiche ton logo en haut de la barre de navigation gauche
 html_favicon = (
