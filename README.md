@@ -91,7 +91,7 @@ L'API (`src/api/main.py`) utilise un mécanisme de cache intelligent pour évite
 
 ---
 
-### Expérimentation : Comment changer de modèle en 3 clics (Sans coder)
+##  ʕ•ᴥ•ʔっ · · · ✴  Expérimentation : Comment changer de modèle en 3 clics (Sans coder)
 
 L'un des plus grands accomplissements de cette architecture MLOps est son dynamisme. Le pipeline d'entraînement a été paramétré via Prefect. Cela signifie que **vous n'avez plus besoin de modifier le code Python pour mettre un nouvel algorithme en production**. 
 
