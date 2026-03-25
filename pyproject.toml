@@ -18,6 +18,8 @@ dependencies = [
     "sphinx>=9.1.0",
     "streamlit>=1.55.0",
     "uvicorn>=0.42.0",
+    "loguru>=0.7.3",
+    "prometheus-client>=0.20.0",
 ]
 
 [dependency-groups]
