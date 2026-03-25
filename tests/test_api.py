@@ -16,7 +16,7 @@ def test_health_check() -> None:
     """Valide que la route de santé répond correctement."""
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "up"}
+    assert response.json() == {"service": "api", "status": "ok"}
 
 
 # Le décorateur @patch intercepte la fonction load_production_model pour l'isoler de MLflow
