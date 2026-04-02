@@ -132,6 +132,19 @@ async def get_prediction_status(task_id: str) -> dict[str, Any]:
     if task_result.ready():
         if task_result.successful():
             result = task_result.result
+
+            # --- NOUVEAUTÉ : On vérifie si le worker a renvoyé une erreur "douce" ---
+            if isinstance(result, dict) and result.get("status") == "error":
+                logger.warning(
+                    f"⚠️ Erreur interne du Worker pour la tâche {task_id} : {result.get('message')}"
+                )
+                return {
+                    "task_id": task_id,
+                    "status": "erreur",
+                    "error": result.get("message"),
+                }
+
+            # Si c'est un vrai succès
             logger.info(f"✅ Résultat disponible pour la tâche {task_id} : {result}")
             return {
                 "task_id": task_id,
@@ -139,12 +152,12 @@ async def get_prediction_status(task_id: str) -> dict[str, Any]:
                 "prediction": result.get("prediction"),
             }
         else:
-            logger.warning(f"⚠️ La tâche {task_id} a échoué.")
+            # Si le worker a fait un crash critique
+            logger.warning(f"⚠️ La tâche {task_id} a échoué violemment.")
             return {
                 "task_id": task_id,
                 "status": "erreur",
                 "error": str(task_result.info),
             }
     else:
-        logger.debug(f"⏳ La tâche {task_id} est toujours en cours de traitement.")
         return {"task_id": task_id, "status": "en cours"}

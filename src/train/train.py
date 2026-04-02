@@ -33,14 +33,18 @@ def prepare_minio():
     """
     Initialise le stockage S3 local (MinIO).
 
-    Vérifie l'existence du bucket 'mlflow' et le crée si nécessaire.
+    Vérifie l'existence du bucket 'mlflow-models' et le crée si nécessaire.
     Cette tâche est résiliente (3 tentatives).
     """
     s3 = boto3.client("s3", endpoint_url=os.environ["MLFLOW_S3_ENDPOINT_URL"])
     buckets = [b["Name"] for b in s3.list_buckets()["Buckets"]]
-    if "mlflow" not in buckets:
-        s3.create_bucket(Bucket="mlflow")
-        print("Bucket 'mlflow' créé avec succès.")
+
+    # Correction : On vérifie bien le nouveau nom du bucket !
+    if "mlflow-models" not in buckets:
+        s3.create_bucket(Bucket="mlflow-models")
+        print("Bucket 'mlflow-models' créé avec succès.")
+    else:
+        print("Bucket 'mlflow-models' existe déjà, on passe.")
 
 
 @task
@@ -96,7 +100,8 @@ def train_and_register(
 
     # --- GESTION DYNAMIQUE DE L'ALIAS ---
     client = MlflowClient()
-    latest_version = model_info.registered_model_version
+    registered_model = client.get_registered_model(model_name)
+    latest_version = registered_model.latest_versions[-1].version
 
     if assign_production_alias:
         client.set_registered_model_alias(model_name, model_alias, str(latest_version))
