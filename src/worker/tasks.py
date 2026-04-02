@@ -25,6 +25,8 @@ logger.add(
 
 load_dotenv()
 
+IRIS_LABELS = {0: "Setosa", 1: "Versicolor", 2: "Virginica"}
+
 # --- 2. CONFIGURATION CELERY ---
 BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
@@ -73,21 +75,31 @@ def predict_task(features: list[list[float]]) -> dict[str, Any]:
 
     Returns:
         dict[str, Any]: Un dictionnaire contenant le statut de la tâche (`complete`
-            ou `error`) et la classe prédite (0, 1, ou 2).
+            ou `error`) et la classe prédite (0, 1, ou 2) et le nom de la fleur correspondante ("Setosa", "Versicolor", "Virginica").
     """
-    logger.info(f"🚀 Nouvelle tâche de prédiction reçue avec les features: {features}")
+    logger.info(f"🚀 Nouvelle tâche de prédiction reçue : {features}")
 
     try:
+        # Latence simulée (MLOps testing)
         processing_time = int(os.getenv("MODEL_LATENCY", "2"))
-        logger.debug(f"Simulation de latence de {processing_time}s...")
         time.sleep(processing_time)
 
+        # Inférence
         model = get_model()
         prediction = model.predict(features)
-        result = int(prediction[0])
 
-        logger.success(f"✅ Prédiction terminée : Classe {result}")
-        return {"status": "complete", "prediction": result}
+        # Extraction du résultat
+        class_id = int(prediction[0])
+        flower_name = IRIS_LABELS.get(class_id, "Inconnue")  # On récupère le nom ici
+
+        logger.success(f"✅ Prédiction terminée : {flower_name} (Classe {class_id})")
+
+        # Mise à jour du dictionnaire de retour
+        return {
+            "status": "complete",
+            "prediction": class_id,
+            "flower_name": flower_name,  # <-- Nouvelle donnée envoyée à Redis
+        }
 
     except Exception as e:
         logger.error(f"❌ Erreur lors de la prédiction : {str(e)}")

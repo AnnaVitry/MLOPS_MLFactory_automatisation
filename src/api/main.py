@@ -150,6 +150,7 @@ async def get_prediction_status(task_id: str) -> dict[str, Any]:
                 "task_id": task_id,
                 "status": "terminé",
                 "prediction": result.get("prediction"),
+                "flower_name": result.get("flower_name"),
             }
         else:
             # Si le worker a fait un crash critique
