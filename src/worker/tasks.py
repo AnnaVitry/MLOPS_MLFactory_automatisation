@@ -8,6 +8,7 @@ d'effectuer les prédictions réelles en dehors du flux de l'API.
 import os
 import sys
 import time
+from typing import Any
 
 import mlflow.pyfunc
 from celery import Celery
@@ -25,7 +26,6 @@ logger.add(
 load_dotenv()
 
 # --- 2. CONFIGURATION CELERY ---
-# Par défaut, on pointe vers un Redis local si les variables Docker ne sont pas là
 BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 
@@ -38,11 +38,15 @@ MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 
 mlflow.set_tracking_uri(MLFLOW_URI)
 
-# Variable globale pour garder le modèle en mémoire (cache) entre deux tâches
 _loaded_model = None
 
 
-def get_model():
+def get_model() -> Any:
+    """Récupère le modèle en cache ou le télécharge depuis MLflow.
+
+    Returns:
+        Any: L'objet modèle MLflow (PyFunc).
+    """
     global _loaded_model
     if _loaded_model is None:
         logger.info(
@@ -56,7 +60,7 @@ def get_model():
 
 # --- 4. LA TÂCHE ASYNCHRONE ---
 @app.task(name="predict_task")
-def predict_task(features: list) -> dict:
+def predict_task(features: list[list[float]]) -> dict[str, Any]:
     """Réalise une prédiction à partir des features fournies.
 
     Cette tâche est appelée par l'API de manière asynchrone. Elle charge
@@ -64,22 +68,20 @@ def predict_task(features: list) -> dict:
     effectue l'inférence, et retourne le résultat dans le backend Redis.
 
     Args:
-        features (list): Une liste de listes contenant les 4 dimensions
+        features (list[list[float]]): Une matrice contenant les dimensions
             de la fleur d'Iris (ex: [[5.1, 3.5, 1.4, 0.2]]).
 
     Returns:
-        dict: Un dictionnaire contenant le statut de la tâche (`complete`
+        dict[str, Any]: Un dictionnaire contenant le statut de la tâche (`complete`
             ou `error`) et la classe prédite (0, 1, ou 2).
     """
     logger.info(f"🚀 Nouvelle tâche de prédiction reçue avec les features: {features}")
 
     try:
-        # Simulation d'un modèle lourd (facultatif, pour voir le worker travailler)
         processing_time = int(os.getenv("MODEL_LATENCY", "2"))
         logger.debug(f"Simulation de latence de {processing_time}s...")
         time.sleep(processing_time)
 
-        # Inférence réelle
         model = get_model()
         prediction = model.predict(features)
         result = int(prediction[0])
