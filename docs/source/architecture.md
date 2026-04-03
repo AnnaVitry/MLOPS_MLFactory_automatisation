@@ -1,41 +1,175 @@
-# Architecture de la ML Factory
+# 🏛️ Architecture de la ML Factory
 
-L'infrastructure de la ML Factory repose sur une architecture **MLOps Cloud-Native**, assurant une séparation stricte entre l'orchestration, l'entraînement, le stockage et l'inférence.
+L'infrastructure de la ML Factory repose sur une architecture **MLOps Cloud-Native**, assurant une séparation stricte entre l'orchestration, l'entraînement, le stockage, l'inférence asynchrone et l'observabilité.
 
-## Composants Principaux
+## ʕ•ᴥ•ʔっ · · · ✴ Schéma Global (Flux de Données)
 
-### 1. Prefect (Orchestrateur & Docker Worker)
-* **Rôle :** Le chef d'orchestre temporel.
-* Il remplace l'exécution manuelle des scripts. Il planifie les tâches (via Cron) et ordonne au *Docker Engine* de créer des conteneurs éphémères pour entraîner les modèles dans un environnement vierge avant de les détruire.
+```text
+[ 👩‍💻 Utilisateur / Data Scientist ]
+                   │
+                   ├──(Déclenche Entraînement)──▶ [ 🧠 Prefect (Orchestrateur) ]
+                   │                                         │
+                   ▼                                         ▼
+        [ 🖥️ Streamlit (Front-end) ]                (Script train.py)
+                   │                                         │
+         (Requête POST JSON)                                 │
+                   │                                         │
+                   ▼                                         ▼
+          [ ⚙️ FastAPI (API) ]                       [ 📦 MLflow (Registry) ]
+                   │                                         │
+      (Publie un Ticket de Tâche)                            │
+                   │                                         │
+┌──────────────────▼─────────────────────────────────────────▼──────────────┐
+│                   MESSAGE BROKER & ASYNCHRONE                             │
+│                                                                           │
+│ [ 🐇 RabbitMQ ] ◀───────(Polling via AMQP)────────── [ 👷 Celery ]        │
+│ (Transit éphémère /        (Aspire les tâches)        (Worker ML)         │
+│  Pas de stockage)                                          │              │
+│                                                            │              │
+│ [ 🔴 Redis ] ◀──────────(Dépose le résultat)───────────────┘              │
+│ (Result Backend)                                                          │
+└──────────────────▲────────────────────────────────────────────────────────┘
+                   │                                         
+     (Interroge Redis / Polling)                      
+                   │                                         
+          [ ⚙️ FastAPI (API) ] ──────(Pousse modèle Champion)──────┐
+                   ▲                                               │
+                   │                                               │
+┌──────────────────▼───────────────────────────────────────────────▼────────┐
+│                      PERSISTANCE & STOCKAGE (Source de Vérité)            │
+│                                                                           │
+│ ├── [ 🐘 PostgreSQL ] (Sauvegarde DURABLE : UUIDs, Métadonnées, Alias)    │
+│ └── [ 🪣 MinIO / S3 ]  (Sauvegarde Gros Binaires : model.pkl, datasets)    │
+└───────────────────────────────────────────────────────────────────────────┘
 
-### 2. MinIO (S3 Compatible)
-* **Rôle :** Stockage physique (Artifact Store).
-* Tous les fichiers binaires `.pkl` générés par Scikit-Learn sont sauvegardés de manière pérenne dans le bucket `mlflow`.
+┌───────────────────────────────────────────────────────────────────────────┐
+│                    OBSERVABILITÉ & MONITORING (Tour de contrôle)          │
+│                                                                           │
+│ ├── [ 👁️ Prometheus ] (Scrape les métriques -> Stockage TSDB interne)     │
+│ ├── [ 📊 Grafana ]    (Agrège dashboards : Prometheus, SQL, & App health) │
+│ └── [ 💓 Uptime Kuma] (Ping HTTP / Alerting Discord & Slack via Bot)      │
+└───────────────────────────────────────────────────────────────────────────┘
+```
 
-### 3. MLflow Tracking & Registry
-* **Rôle :** Le centre de contrôle (Model Registry).
-* Suivi des métriques (Accuracy), des hyperparamètres, et gestion du cycle de vie des modèles via le système d'Alias (ex: assigner l'étiquette `production` au modèle le plus performant).
+## ʕ•ᴥ•ʔっ · · · ✴ Composants Principaux
 
-### 4. FastAPI (Inférence)
-* **Rôle :** Le moteur de prédiction.
-* Implémente une logique de **Hot-Reloading** : à chaque requête, il interroge MLflow pour s'assurer que le modèle chargé en RAM correspond bien à l'alias `production`. Si l'alias change, il télécharge silencieusement le nouveau binaire depuis MinIO sans interrompre le service.
+### 1. La Couche d'Entrée (User Facing)
+* **Streamlit (UI) :** Interface utilisateur. Communique de manière asynchrone avec FastAPI. Elle capte les mesures, lance la demande, et interroge régulièrement l'API en attendant le résultat.
+* **FastAPI (Inférence) :** Le guichetier asynchrone. Au lieu de bloquer le système lors d'une prédiction, il vérifie les données, place un ordre dans la file d'attente, et renvoie immédiatement un "Ticket" (Task ID) à l'utilisateur.
 
-### 5. Streamlit (Front-End)
-* **Rôle :** Interface utilisateur.
-* Communique de manière asynchrone avec FastAPI pour offrir une visualisation en temps réel.
+### 2. La Couche Asynchrone (Message Broker & Worker)
+* **RabbitMQ :** L'amortisseur de chocs. Gère la file d'attente des prédictions. Si l'API reçoit un pic de requêtes, elles sont empilées ici pour éviter tout crash.
+* **Celery Worker :** La force de calcul. Il tourne en arrière-plan, interroge RabbitMQ, récupère une tâche, télécharge la bonne version du modèle depuis MLflow, et exécute l'inférence.
+* **Redis :** La mémoire ultra-rapide (Result Backend). Le Worker y dépose la prédiction finale. FastAPI vient lire cette mémoire pour informer Streamlit que le ticket est prêt.
 
-## Arborescence du Projet
+### 3. La Couche Machine Learning & Stockage
+* **Prefect (Orchestrateur) :** Le planificateur de l'entraînement. Il orchestre l'exécution du script `train.py` sous forme de graphe (DAG), gérant les tentatives en cas d'échec (retries).
+* **MLflow Tracking & Registry :** Le centre de contrôle des modèles. Suivi des métriques (Accuracy), des hyperparamètres, et gestion du cycle de vie via l'assignation de l'alias `production`. Le Celery Worker l'interroge systématiquement pour charger la bonne IA.
+* **MinIO (S3 Compatible) :** Stockage physique (Artifact Store). Sauvegarde pérenne des gros fichiers binaires `.pkl`.
+* **PostgreSQL :** Base de données relationnelle archivistique stockant les métadonnées de MLflow.
+
+### 4. La Couche d'Observabilité (SRE)
+* **Prometheus :** Base de données Time-Series qui *scrape* les métriques matérielles et logicielles des conteneurs (RAM, requêtes HTTP, taille de la file RabbitMQ).
+* **Grafana :** L'interface visuelle traduisant les données Prometheus en tableaux de bord dynamiques.
+* **Uptime Kuma :** Le système de monitoring par ping qui vérifie la disponibilité en temps réel des différents conteneurs.
+
+### 5. La Couche CI/CD (GitHub Actions)
+* **Qualité & Sécurité :** Gitleaks (fuite de secrets) et Ruff (linting).
+* **Tests :** Pytest exécuté sur une infrastructure Docker éphémère.
+* **Déploiement :** Construction et push automatique des images (API, Worker, Front) vers le GitHub Container Registry (GHCR), et publication de cette documentation sur GitHub Pages.
+
+## ʕ•ᴥ•ʔっ · · · ✴ Arborescence du Projet
 
 ```text
 MLOPS_MLFACTORY/
+├── .github/workflows/      # Pipelines CI/CD (Tests, Build Docker, GH Pages)
 ├── data/                   # Fichiers CSV générés pour les tests
-├── docs/                   # Documentation technique Sphinx/ReadTheDocs
+├── docs/                   # Documentation technique Sphinx/Furo
+├── prometheus/             # Configuration du scrapping des métriques
 ├── src/
-│   ├── api/                # Backend FastAPI (Inférence & Hot-Reloading)
-│   ├── front/              # Interface Streamlit (UI)
-│   └── train/              # Pipeline d'entraînement métier (Flow Prefect)
-├── prefect.yaml            # Plan de vol de Prefect (Déploiement et Worker)
-├── .env                    # Variables d'environnement locales (Secrets et URLs)
-├── docker-compose.yml      # L'usine (MinIO, MLflow, API, Front, Prefect DB)
+│   ├── api/                # Backend FastAPI (Routage et distribution des tâches)
+│   ├── front/              # Interface Streamlit asynchrone
+│   ├── train/              # Pipeline d'entraînement métier (Flow Prefect)
+│   └── worker/             # Logique Celery (Téléchargement MLflow & Inférence)
+├── tests/                  # Tests unitaires et d'intégration (Pytest)
+├── prefect.yaml            # Plan de vol de Prefect
+├── .env.example            # Template des variables d'environnement (Secrets/URLs)
+├── docker-compose.yml      # Infrastructure de base
+├── docker-compose.full.yml # L'usine complète (Inclus Observabilité & Broker)
 └── pyproject.toml          # Gestion stricte des dépendances avec uv
 ```
+
+```mermaid
+graph TD
+    %% Définition des styles (couleurs)
+    classDef user fill:#f8f9fa,stroke:#343a40,stroke-width:2px
+    classDef front fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    classDef backend fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    classDef broker fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    classDef db fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    classDef obs fill:#ffebee,stroke:#f44336,stroke-width:2px
+
+    %% Utilisateur
+    User["👩‍💻 Utilisateur / Data Scientist"]:::user
+
+    %% Couche Orchestration
+    subgraph Orchestration ["Orchestration & ML"]
+        Prefect["🧠 Prefect (Orchestrateur)"]:::backend
+        Train["Script train.py"]:::backend
+        MLflow["📦 MLflow (Registry)"]:::db
+        
+        Prefect -->|Déclenche| Train
+        Train -->|Log les modèles & métriques| MLflow
+    end
+
+    %% Couche Inférence
+    subgraph Inference ["Couche d'Entrée (User Facing)"]
+        Streamlit["🖥️ Streamlit (Front-end)"]:::front
+        FastAPI["⚙️ FastAPI (API)"]:::backend
+    end
+
+    %% Couche Asynchrone
+    subgraph Broker ["Message Broker & Worker Asynchrone"]
+        RabbitMQ["🐇 RabbitMQ (File d'attente / Transit)"]:::broker
+        Celery["👷 Celery (Worker ML)"]:::backend
+        Redis["🔴 Redis (Result Backend)"]:::db
+        
+        RabbitMQ -->|Aspire les tâches (AMQP)| Celery
+        Celery -->|Dépose le résultat final| Redis
+    end
+
+    %% Couche Stockage Durable
+    subgraph Stockage ["Persistance & Stockage (Source de Vérité)"]
+        PG["🐘 PostgreSQL (Métadonnées, Alias)"]:::db
+        MinIO["🪣 MinIO / S3 (Gros Binaires .pkl)"]:::db
+    end
+
+    %% Couche Observabilité
+    subgraph Observabilite ["Observabilité & Monitoring (Tour de Contrôle)"]
+        Prometheus["👁️ Prometheus (TSDB / Scraper)"]:::obs
+        Grafana["📊 Grafana (Dashboards)"]:::obs
+        Uptime["💓 Uptime Kuma (Alerting)"]:::obs
+        
+        Prometheus -->|Alimente| Grafana
+    end
+
+    %% Les flux principaux (Connexions inter-couches)
+    User -->|Déclenche Entraînement| Prefect
+    User -->|Interagit avec l'UI| Streamlit
+    
+    Streamlit -->|Requête POST JSON| FastAPI
+    
+    FastAPI -->|1. Publie un Ticket de Tâche| RabbitMQ
+    FastAPI -->|2. Interroge / Polling| Redis
+    FastAPI -->|Pousse le modèle Champion| PG
+    FastAPI -->|Pousse le modèle Champion| MinIO
+    
+    Celery -.->|Télécharge le modèle pour Inférence| MLflow
+    
+    %% Liens de monitoring (en pointillés pour la lisibilité)
+    Prometheus -.->|Scrape les métriques| FastAPI
+    Prometheus -.->|Scrape les métriques| RabbitMQ
+    Prometheus -.->|Scrape les métriques| Celery
+    Uptime -.->|Ping HTTP| FastAPI
+    Uptime -.->|Ping HTTP| Streamlit
+    ```
