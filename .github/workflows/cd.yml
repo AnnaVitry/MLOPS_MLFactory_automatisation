@@ -82,40 +82,25 @@ jobs:
           # Le token est fourni automatiquement par GitHub
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- CONQUÊTE DE L'API ---
-      - name: Extraction des métadonnées (API)
+      # --- CONQUÊTE DE L'API ET DU WORKER ---
+      - name: Extraction des métadonnées (API et Worker)
         id: meta-api
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api
+          # On liste les DEUX noms d'images ici
+          images: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-worker
           tags: |
             type=raw,value=latest
             type=sha,prefix=
 
-      - name: Build et Push (API)
+      - name: Build et Push (API & Worker)
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./src/api/Dockerfile 
           push: true
+          # L'action va automatiquement étiqueter et pousser l'image sous les deux noms !
           tags: ${{ steps.meta-api.outputs.tags }}
           labels: ${{ steps.meta-api.outputs.labels }}
-
-      # --- CONQUÊTE DU FRONT ---
-      - name: Extraction des métadonnées (Front)
-        id: meta-front
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-front
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=
-
-      - name: Build et Push (Front)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./src/front/Dockerfile
-          push: true
-          tags: ${{ steps.meta-front.outputs.tags }}
-          labels: ${{ steps.meta-front.outputs.labels }}

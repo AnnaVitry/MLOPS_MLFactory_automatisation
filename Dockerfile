@@ -1,5 +1,5 @@
-# On utilise l'image officielle Prefect avec Python 3.12 (comme ton environnement)
-FROM prefecthq/prefect:3-python3.12
+# On utilise l'image officielle Prefect avec python 3.12 (comme ton environnement)
+FROM prefecthq/prefect:3-python3.12-slim
 
 # On installe uv pour une gestion ultra-rapide des dépendances
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv

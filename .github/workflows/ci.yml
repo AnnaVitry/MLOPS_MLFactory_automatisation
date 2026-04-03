@@ -65,11 +65,11 @@ jobs:
         # uv sync installe tout ce qui est dans pyproject.toml (incluant furo et sphinx)
         run: |
           pip install uv
-          uv sync
+          uv sync --python 3.12
           uv run make -C docs html
 
-  # ==========================================
-  # 4. Tests Unitaires (Pytest) 
+# ==========================================
+  # 4. Tests Unitaires & Intégration (Pytest) 
   # ==========================================
   test:
     name: Unit Tests (Pytest)
@@ -85,7 +85,30 @@ jobs:
           enable-cache: true
           
       - name: Synchronisation de l'environnement
-        run: uv sync --dev
+        run: uv sync --dev --python 3.12
+
+      - name: Allumage de l'infrastructure (Docker Compose)
+        # On allume uniquement les services dont l'API et Celery ont besoin pour fonctionner
+        run: |
+          docker compose -f docker-compose.full.yml up -d db minio rabbitmq redis mlflow
+          
+          # Pause de 15s pour laisser le temps à Postgres et RabbitMQ de s'initialiser
+          echo "Attente du démarrage des services..."
+          sleep 15 
+          docker compose -f docker-compose.full.yml ps
         
       - name: Exécution des tests
+        # On passe les variables d'environnement pour que pytest trouve l'infrastructure Docker locale
+        env:
+          POSTGRES_USER: mlflow
+          POSTGRES_PASSWORD: mlflow
+          POSTGRES_DB: mlflowdb
+          MINIO_ROOT_USER: admin
+          MINIO_ROOT_PASSWORD: password123
+          MLFLOW_TRACKING_URI: http://localhost:5000
+          MLFLOW_S3_ENDPOINT_URL: http://localhost:9000
+          AWS_ACCESS_KEY_ID: admin
+          AWS_SECRET_ACCESS_KEY: password123
+          CELERY_BROKER_URL: amqp://guest:guest@localhost:5672//
+          CELERY_RESULT_BACKEND: redis://localhost:6379/0
         run: uv run pytest tests/

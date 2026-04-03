@@ -1,10 +1,9 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 WORKDIR /app
 
 RUN pip install uv 
 COPY pyproject.toml uv.lock ./
-
-RUN uv sync
+RUN uv sync --python 3.12 --frozen
 
 COPY src/front/ ./src/front/
 EXPOSE 8501

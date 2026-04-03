@@ -1,101 +1,164 @@
-"""Module principal de l'API FastAPI pour l'inférence MLOps."""
+"""Module de l'API FastAPI pour l'inférence MLOps.
 
-import os
+Ce module expose les routes REST permettant aux utilisateurs de
+soumettre des données pour prédiction. Il délègue le calcul lourd
+à un worker asynchrone via Celery et RabbitMQ.
+"""
+
 import sys
+from typing import Any
 
-import mlflow
-import mlflow.pyfunc
-from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from loguru import logger
-from mlflow.tracking import MlflowClient
-from prometheus_client import Counter, make_asgi_app
 from pydantic import BaseModel
 
-# --- 1. CONFIGURATION DES LOGS (LOGURU) ---
-logger.remove()  # Supprime le logger par défaut
+from src.worker.tasks import app as celery_app
+from src.worker.tasks import predict_task
+
+# --- 1. CONFIGURATION LOGURU ---
+logger.remove()
 logger.add(
     sys.stdout,
-    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{message}</cyan>",
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <blue>API</blue> - <level>{message}</level>",
     colorize=True,
 )
-logger.add("logs/api.log", rotation="10 MB", retention="10 days", level="INFO")
 
-load_dotenv()  # Charge les variables du .env
-
-app = FastAPI(title="Iris ML Factory API")
-
-# --- 2. CONFIGURATION PROMETHEUS ---
-metrics_app = make_asgi_app()
-app.mount("/metrics", metrics_app)
-PREDICTION_COUNTER = Counter(
-    "ml_predictions_total", "Nombre total de prédictions effectuées", ["model_version"]
+app = FastAPI(
+    title="ML Factory API Asynchrone",
+    description="API de prédiction avec délégation asynchrone via Celery",
+    version="2.0.0",
 )
 
-# Configuration via variables d'environnement
-MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-MODEL_NAME = os.getenv("MODEL_NAME", "iris_model")
-MODEL_ALIAS = os.getenv("MODEL_ALIAS", "production")
 
-# Initialisation du client
-client = MlflowClient(tracking_uri=MLFLOW_URI)
-state = {"model": None, "version": None}
+# --- 2. MODÈLES DE DONNÉES (Pydantic) ---
+class Features(BaseModel):
+    """Représente les caractéristiques d'une fleur d'Iris.
 
+    Attributes:
+        sepal_length (float): La longueur du sépale en cm.
+        sepal_width (float): La largeur du sépale en cm.
+        petal_length (float): La longueur du pétale en cm.
+        petal_width (float): La largeur du pétale en cm.
+    """
 
-class IrisData(BaseModel):
     sepal_length: float
     sepal_width: float
     petal_length: float
     petal_width: float
 
 
-def load_production_model():
-    try:
-        alias_info = client.get_model_version_by_alias(MODEL_NAME, MODEL_ALIAS)
-        prod_version = alias_info.version
+# --- 3. ROUTES ---
+@app.get("/")
+async def root() -> dict[str, str]:
+    """Route d'accueil de l'API.
 
-        if state["model"] is None or prod_version != state["version"]:
-            # On utilise logger.info au lieu du simple print
-            logger.info(
-                f"🔄 Rechargement à chaud : Passage à la version {prod_version}"
-            )
-            model_uri = f"models:/{MODEL_NAME}@{MODEL_ALIAS}"
-            state["model"] = mlflow.pyfunc.load_model(model_uri)
-            state["version"] = prod_version
+    Returns:
+        dict[str, str]: Un message de bienvenue simple.
+    """
+    logger.info("Requête reçue sur la racine (/)")
+    return {"message": "Bienvenue sur l'API ML Factory Asynchrone"}
 
-        return state["model"], state["version"]
-    except Exception as e:
-        logger.error(f"Erreur MLflow: {str(e)}")
-        raise HTTPException(status_code=404, detail=f"Erreur MLflow: {str(e)}")
+
+@app.get("/health")
+async def health_check() -> dict[str, str]:
+    """Sonde de vie pour le monitoring (Uptime Kuma/Kubernetes).
+
+    Returns:
+        dict[str, str]: Le statut de santé de l'API.
+    """
+    logger.debug("Sonde de santé interrogée")
+    return {"status": "ok", "message": "API opérationnelle"}
 
 
 @app.post("/predict")
-def predict(data: IrisData):
-    # Récupération dynamique du modèle
-    model, version = load_production_model()
+async def create_prediction_task(features: Features) -> dict[str, Any]:
+    """Soumet une tâche de prédiction au broker de messages.
 
-    # Préparation des données et Inférence
-    features = [
-        [data.sepal_length, data.sepal_width, data.petal_length, data.petal_width]
+    Au lieu de réaliser la prédiction de manière synchrone, cette route
+    envoie les données au worker Celery et retourne immédiatement un
+    identifiant de tâche (Task ID) au client.
+
+    Args:
+        features (Features): Les mesures de la fleur envoyées par le client.
+
+    Returns:
+        dict[str, Any]: Un dictionnaire contenant un message de confirmation et
+            le `task_id` permettant de suivre l'avancement.
+
+    Raises:
+        HTTPException: Si le broker (RabbitMQ/Redis) est injoignable (Erreur 503).
+    """
+    logger.info(f"📥 Demande de prédiction reçue : {features}")
+
+    feature_list = [
+        [
+            features.sepal_length,
+            features.sepal_width,
+            features.petal_length,
+            features.petal_width,
+        ]
     ]
-    prediction = model.predict(features)
 
-    # --- 3. INCRÉMENTATION PROMETHEUS ET LOG DE SUCCÈS ---
-    PREDICTION_COUNTER.labels(model_version=version).inc()
-    logger.info(
-        f"Prédiction réussie (Classe {int(prediction[0])}) avec le modèle v{version}"
-    )
+    try:
+        task = predict_task.delay(feature_list)
+        logger.success(f"📤 Tâche envoyée au Broker avec l'ID : {task.id}")
+        return {"message": "Prédiction en cours de traitement", "task_id": task.id}
 
-    return {
-        "prediction": int(prediction[0]),
-        "model_version": version,
-        "status": "success",
-    }
+    except Exception as e:
+        logger.error(f"❌ Impossible de contacter le Broker : {str(e)}")
+        raise HTTPException(
+            status_code=503, detail="Service de file d'attente indisponible"
+        )
 
 
-# --- 4. SONDE DE VIE (UPTIME KUMA) ---
-@app.get("/health")
-async def health_check():
-    """Endpoint ultra-léger que Kuma va pinger toutes les 60s"""
-    logger.debug("Sonde Uptime Kuma reçue")
-    return {"status": "ok", "service": "api"}
+@app.get("/predict/status/{task_id}")
+async def get_prediction_status(task_id: str) -> dict[str, Any]:
+    """Vérifie le statut d'une tâche de prédiction asynchrone.
+
+    Cette route est interrogée par le client (ex: Streamlit) pour
+    savoir si le worker Celery a terminé son calcul.
+
+    Args:
+        task_id (str): L'identifiant unique de la tâche retourné par /predict.
+
+    Returns:
+        dict[str, Any]: L'état actuel de la tâche (`en cours`, `terminé`, ou `erreur`)
+            ainsi que la prédiction si elle est terminée.
+    """
+    logger.debug(f"🔍 Vérification du statut pour la tâche : {task_id}")
+
+    task_result = celery_app.AsyncResult(task_id)
+
+    if task_result.ready():
+        if task_result.successful():
+            result = task_result.result
+
+            # --- NOUVEAUTÉ : On vérifie si le worker a renvoyé une erreur "douce" ---
+            if isinstance(result, dict) and result.get("status") == "error":
+                logger.warning(
+                    f"⚠️ Erreur interne du Worker pour la tâche {task_id} : {result.get('message')}"
+                )
+                return {
+                    "task_id": task_id,
+                    "status": "erreur",
+                    "error": result.get("message"),
+                }
+
+            # Si c'est un vrai succès
+            logger.info(f"✅ Résultat disponible pour la tâche {task_id} : {result}")
+            return {
+                "task_id": task_id,
+                "status": "terminé",
+                "prediction": result.get("prediction"),
+                "flower_name": result.get("flower_name"),
+            }
+        else:
+            # Si le worker a fait un crash critique
+            logger.warning(f"⚠️ La tâche {task_id} a échoué violemment.")
+            return {
+                "task_id": task_id,
+                "status": "erreur",
+                "error": str(task_result.info),
+            }
+    else:
+        return {"task_id": task_id, "status": "en cours"}
