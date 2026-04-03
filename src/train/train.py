@@ -89,7 +89,7 @@ def train_and_register(
         mlflow.log_metric("accuracy", accuracy)
 
         model_name = "iris_model"
-        model_info = mlflow.sklearn.log_model(
+        mlflow.sklearn.log_model(
             sk_model=model, artifact_path="model", registered_model_name=model_name
         )
 

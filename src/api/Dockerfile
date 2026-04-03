@@ -3,8 +3,8 @@ FROM python:3.12-slim
 WORKDIR /app
 
 RUN pip install uv
-COPY pyproject.toml . 
-RUN uv sync --python 3.12
+COPY pyproject.toml uv.lock ./
+RUN uv sync --python 3.12 --frozen
 COPY src ./src
 
 EXPOSE 8000

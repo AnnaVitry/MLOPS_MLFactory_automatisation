@@ -3,8 +3,7 @@ WORKDIR /app
 
 RUN pip install uv 
 COPY pyproject.toml uv.lock ./
-
-RUN uv sync --python 3.12
+RUN uv sync --python 3.12 --frozen
 
 COPY src/front/ ./src/front/
 EXPOSE 8501
