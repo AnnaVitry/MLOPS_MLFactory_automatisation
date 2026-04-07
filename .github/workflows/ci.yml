@@ -90,7 +90,7 @@ jobs:
       - name: Allumage de l'infrastructure (Docker Compose)
         # On allume uniquement les services dont l'API et Celery ont besoin pour fonctionner
         run: |
-          docker compose up docker-compose.yml -d --build db minio rabbitmq redis mlflow
+          docker compose up -d --build db db minio rabbitmq redis mlflow
           
           # Pause de 15s pour laisser le temps à Postgres et RabbitMQ de s'initialiser
           echo "Attente du démarrage des services..."
