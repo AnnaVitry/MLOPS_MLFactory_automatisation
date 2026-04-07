@@ -90,12 +90,12 @@ jobs:
       - name: Allumage de l'infrastructure (Docker Compose)
         # On allume uniquement les services dont l'API et Celery ont besoin pour fonctionner
         run: |
-          docker compose up -d --build db db minio rabbitmq redis mlflow
+          docker compose up -d --build db minio rabbitmq redis mlflow
           
           # Pause de 15s pour laisser le temps à Postgres et RabbitMQ de s'initialiser
           echo "Attente du démarrage des services..."
           sleep 15 
-          docker compose docker-compose.yml ps
+          docker compose ps
         
       - name: Exécution des tests
         # On passe les variables d'environnement pour que pytest trouve l'infrastructure Docker locale
