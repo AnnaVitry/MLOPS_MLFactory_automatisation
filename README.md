@@ -70,6 +70,15 @@
 │ └── [ 💓 Uptime Kuma] (Ping HTTP pour vérifier que tout est en ligne)     │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
+
+```{figure} _static/img/shema_mlfactory2.png
+---
+width: 100%
+align: center
+alt: Schéma de l'architecture MLOps
+---
+```
+
  Cette usine MLOps est conçue pour être robuste, asynchrone et hautement observable. Voici la fonction exacte de chaque brique de l'infrastructure :
 
 ###  1. Le Cœur Métier (Front & Back)
