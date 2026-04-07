@@ -4,7 +4,13 @@ L'infrastructure de la ML Factory repose sur une architecture **MLOps Cloud-Nati
 
 ## ʕ•ᴥ•ʔっ · · · ✴ Schéma Global (Flux de Données)
 
-[Photo_shema_mlfactory](./_static/img/shema_mlfactory2.png)
+{figure} _static/img/shema_mlfactory2.png
+---
+width: 80%
+align: center
+alt: Schéma de l'architecture MLOps
+---
+
 
 ## ʕ•ᴥ•ʔっ · · · ✴ Composants Principaux
 
