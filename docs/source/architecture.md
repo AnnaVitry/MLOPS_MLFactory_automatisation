@@ -6,7 +6,7 @@ L'infrastructure de la ML Factory repose sur une architecture **MLOps Cloud-Nati
 
 ```{figure} _static/img/shema_mlfactory2.png
 ---
-width: 80%
+width: 100%
 align: center
 alt: Schéma de l'architecture MLOps
 ---
