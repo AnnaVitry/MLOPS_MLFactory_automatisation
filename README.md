@@ -145,7 +145,7 @@ MODEL_ALIAS=production
 Construisez et lancez l'usine complète en arrière-plan :
 
 ```bash
-docker compose -f docker-compose.full.yml up -d --build
+docker compose up -d --build
 ```
 > *Patientez 30 secondes pour laisser le temps aux bases de données (Postgres, MinIO, RabbitMQ) de s'initialiser correctement.*
 
@@ -245,7 +245,7 @@ Si l'environnement Docker devient instable (conflits de volumes, mots de passe e
 
 ```bash
 # 1. Détruire l'infrastructure ET purger les mémoires corrompues (Volumes)
-docker compose -f docker-compose.full.yml down -v  
+docker compose down -d --build -v  
 
 # 2. Nettoyage massif du stockage Docker (Attention, supprime le cache)
 docker builder prune -a --force
@@ -253,5 +253,5 @@ docker image prune -a -f
 docker volume prune -f
 
 # 3. Redémarrage propre
-docker compose -f docker-compose.full.yml up -d --build
+docker compose up -d --build
 ```
