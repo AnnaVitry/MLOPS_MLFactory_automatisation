@@ -4,52 +4,7 @@ L'infrastructure de la ML Factory repose sur une architecture **MLOps Cloud-Nati
 
 ## ʕ•ᴥ•ʔっ · · · ✴ Schéma Global (Flux de Données)
 
-```text
-[ 👩‍💻 Utilisateur / Data Scientist ]
-                   │
-                   ├──(Déclenche Entraînement)──▶ [ 🧠 Prefect (Orchestrateur) ]
-                   │                                         │
-                   ▼                                         ▼
-        [ 🖥️ Streamlit (Front-end) ]                (Script train.py)
-                   │                                         │
-         (Requête POST JSON)                                 │
-                   │                                         │
-                   ▼                                         ▼
-          [ ⚙️ FastAPI (API) ]                       [ 📦 MLflow (Registry) ]
-                   │                                         │
-      (Publie un Ticket de Tâche)                            │
-                   │                                         │
-┌──────────────────▼─────────────────────────────────────────▼──────────────┐
-│                   MESSAGE BROKER & ASYNCHRONE                             │
-│                                                                           │
-│ [ 🐇 RabbitMQ ] ◀───────(Polling via AMQP)────────── [ 👷 Celery ]        │
-│ (Transit éphémère /        (Aspire les tâches)        (Worker ML)         │
-│  Pas de stockage)                                          │              │
-│                                                            │              │
-│ [ 🔴 Redis ] ◀──────────(Dépose le résultat)───────────────┘              │
-│ (Result Backend)                                                          │
-└──────────────────▲────────────────────────────────────────────────────────┘
-                   │                                         
-     (Interroge Redis / Polling)                      
-                   │                                         
-          [ ⚙️ FastAPI (API) ] ──────(Pousse modèle Champion)──────┐
-                   ▲                                               │
-                   │                                               │
-┌──────────────────▼───────────────────────────────────────────────▼────────┐
-│                      PERSISTANCE & STOCKAGE (Source de Vérité)            │
-│                                                                           │
-│ ├── [ 🐘 PostgreSQL ] (Sauvegarde DURABLE : UUIDs, Métadonnées, Alias)    │
-│ └── [ 🪣 MinIO / S3 ]  (Sauvegarde Gros Binaires : model.pkl, datasets)    │
-└───────────────────────────────────────────────────────────────────────────┘
-
-┌───────────────────────────────────────────────────────────────────────────┐
-│                    OBSERVABILITÉ & MONITORING (Tour de contrôle)          │
-│                                                                           │
-│ ├── [ 👁️ Prometheus ] (Scrape les métriques -> Stockage TSDB interne)     │
-│ ├── [ 📊 Grafana ]    (Agrège dashboards : Prometheus, SQL, & App health) │
-│ └── [ 💓 Uptime Kuma] (Ping HTTP / Alerting Discord & Slack via Bot)      │
-└───────────────────────────────────────────────────────────────────────────┘
-```
+[Photo_shema_mlfactory](./_static/img/shema_mlfactory2.png)
 
 ## ʕ•ᴥ•ʔっ · · · ✴ Composants Principaux
 
